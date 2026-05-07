@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Quản lý lớp học Gia sư</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --teal: #3bbfad; --teal-dark: #2a9d8f; --teal-light: #e0f5f3;
+  --pink: #f72585; --pink-light: #fff0f6;
+  --yellow: #ffd166; --yellow-light: #fffbea;
+  --blue: #4895ef; --orange: #f3722c;
+  --text: #2d3748; --text-light: #718096;
+  --border: #e2e8f0; --white: #ffffff; --bg: #f0faf9;
+  --shadow: 0 4px 24px rgba(59,191,173,0.13); --radius: 18px;
+}
+body.dark {
+  --bg:#0b1120;--white:#1e293b;--text:#ffffff;--text-light:#94a3b8;
+  --border:#334155;--teal-light:#134e4a;--teal-dark:#5eead4;--teal:#2dd4bf;
+  --yellow-light:#451a03;--pink-light:#701a75;--pink:#f472b6;
+  --shadow:0 8px 30px rgba(0,0,0,0.8);
+}
+body.dark .login-box{background:rgba(30,41,59,0.85);box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+body.dark select{background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");}
+body.dark .phieu{background:#ffffff!important;color:#2d3748!important;}
+body.dark .badge-private{background:rgba(59,130,246,0.2);color:#93c5fd;border:1px solid rgba(59,130,246,0.3);}
+body.dark .badge-group{background:rgba(245,158,11,0.2);color:#fcd34d;border:1px solid rgba(245,158,11,0.3);}
+body.dark .stat-num-unpaid{color:#f87171!important;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:-webkit-fill-available;-webkit-overflow-scrolling:touch;overscroll-behavior-y:none;transition:background-color 0.3s,color 0.3s;}
+#login-screen{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:var(--bg);background-image:url('anhngangmaytinh.png');background-size:cover;background-position:center;background-repeat:no-repeat;}
+.login-box{background:rgba(255,255,255,0.85);padding:40px 30px;border-radius:24px;box-shadow:0 10px 40px rgba(0,0,0,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;gap:20px;transition:0.3s;}
+@media(max-width:640px){#login-screen{background-image:url('anhngangdienthoai.png');}}
+.nav{background:var(--white);border-bottom:2px solid var(--teal-light);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(59,191,173,0.1);transform:translateZ(0);transition:0.3s;}
+.nav-brand{font-size:0.95rem;font-weight:900;color:var(--teal-dark);display:flex;align-items:center;gap:8px;}
+.nav-tabs{display:flex;gap:4px;}
+.nav-tab{padding:6px 14px;border-radius:20px;border:none;background:none;font-family:inherit;font-size:0.85rem;font-weight:700;color:var(--text-light);cursor:pointer;transition:all .2s;}
+.nav-tab.active{background:var(--teal);color:#ffffff;}
+.nav-tab:hover:not(.active){background:var(--teal-light);color:var(--teal-dark);}
+.theme-btn{background:none;border:none;font-size:1.2rem;cursor:pointer;margin-left:10px;transition:transform 0.2s;}
+.theme-btn:hover{transform:scale(1.1);}
+.main{max-width:960px;margin:0 auto;padding:24px 16px;padding-bottom:calc(80px + env(safe-area-inset-bottom));}
+.page{display:none;} .page.active{display:block;animation:fadeSlideUp 0.35s ease-out;}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px;transition:0.3s;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.card-title{font-size:1.1rem;font-weight:800;color:var(--teal-dark);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:30px;border:none;font-family:inherit;font-weight:700;font-size:0.875rem;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--teal);color:#ffffff;}
+.btn-primary:hover{background:var(--teal-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,191,173,0.35);}
+.btn-pink{background:var(--pink);color:#ffffff;}
+.btn-outline{background:none;border:2px solid var(--teal);color:var(--teal);}
+.btn-outline:hover{background:var(--teal-light);}
+.btn-sm{padding:5px 12px;font-size:0.78rem;}
+.btn-danger{background:#fed7d7;color:#c53030;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:0.82rem;font-weight:700;color:var(--text-light);}
+input,select,textarea{padding:9px 13px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:0.9rem;color:var(--text);background:var(--white);transition:all .2s;width:100%;box-sizing:border-box;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal);}
+textarea{resize:vertical;min-height:70px;}
+select{-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232d3748' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-right:32px!important;cursor:pointer;}
+.type-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:2px solid var(--border);cursor:pointer;font-weight:700;font-size:.85rem;transition:all .2s;flex:1;justify-content:center;color:var(--text);}
+.type-btn.active{border-color:var(--teal);background:var(--teal-light);color:var(--teal-dark);}
+.badge-private{background:#e8f4fd;color:#2b6cb0;font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:20px;}
+.badge-group{background:#fef3c7;color:#b45309;font-size:.7rem;font-weight:800;padding:2px 8px;border-radius:20px;}
+.student-check-badge{display:inline-flex;align-items:center;gap:8px;background:var(--bg);padding:8px 14px;border-radius:20px;margin:4px 4px 4px 0;cursor:pointer;border:2px solid var(--border);font-size:0.85rem;font-weight:700;color:var(--text);transition:all 0.2s;}
+.student-check-badge:hover{border-color:var(--teal);}
+.student-check-badge input[type="checkbox"]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer;margin:0;}
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+.student-card{background:var(--white);border-radius:14px;border:2px solid var(--border);padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.student-card:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 6px 20px rgba(59,191,173,0.15);}
+.student-card.selected{border-color:var(--teal);background:var(--teal-light);}
+.student-name{font-weight:800;font-size:1rem;color:var(--text);margin-bottom:4px;}
+.student-meta{font-size:0.8rem;color:var(--text-light);}
+.month-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.month-nav{background:var(--teal-light);border:none;color:var(--teal-dark);font-size:1.2rem;width:32px;height:32px;border-radius:50%;cursor:pointer;font-weight:900;}
+.month-label{font-weight:800;font-size:1.05rem;color:var(--text);}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-head{text-align:center;font-size:0.7rem;font-weight:800;color:var(--text-light);padding:4px;}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all .18s;border:2px solid transparent;}
+.cal-day.empty{pointer-events:none;}
+.cal-day.today{border-color:var(--teal);color:var(--teal);}
+.cal-day.att-group{background:#4895ef;color:white;border-color:#4895ef;box-shadow:0 4px 10px rgba(72,149,239,0.3);}
+.cal-day.att-private{background:#f3722c;color:white;border-color:#f3722c;box-shadow:0 4px 10px rgba(243,114,44,0.3);}
+.cal-day.att-mix{background:linear-gradient(135deg,#f3722c 50%,#4895ef 50%);color:white;border-color:transparent;}
+.calendar-layout{display:grid;gap:20px;}
+@media(min-width:650px){.calendar-layout{grid-template-columns:1.5fr 1fr;align-items:start;}}
+.sticky-note{background:var(--yellow-light);border-left:4px solid #f59e0b;padding:16px;border-radius:10px;font-size:0.85rem;color:#78350f;line-height:1.5;}
+body.dark .sticky-note{color:var(--text-light);}
+.multi-badge{position:absolute;top:-5px;right:-5px;background:#2d3748;color:white;font-size:0.65rem;font-weight:900;padding:2px 6px;border-radius:10px;z-index:2;}
+.phieu-wrap{display:flex;justify-content:center;}
+.phieu{width:340px;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.13);font-family:'Quicksand',sans-serif;background:white;}
+.phieu-header{background:var(--teal);padding:22px 20px 18px;text-align:center;color:white;}
+.phieu-header .lop{font-size:0.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.85;}
+.phieu-header .title{font-size:2rem;font-weight:800;letter-spacing:1px;margin:2px 0;}
+.phieu-header .thang{font-size:0.9rem;opacity:.9;}
+.phieu-body{background:white;padding:18px 20px;}
+.phieu-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1.5px dashed var(--border);font-size:0.88rem;}
+.phieu-total{background:#e0f5f3;border:2px solid var(--teal);border-radius:12px;padding:12px;text-align:center;margin:12px 0;color:#2d3748;}
+.phieu-dates-wrap{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}
+.phieu-date-chip{background:#e0f5f3;color:var(--teal-dark);font-size:0.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:1.5px solid #b2dfdb;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--white);border-radius:14px;padding:14px 8px;text-align:center;box-shadow:var(--shadow);min-width:0;}
+.stat-num{font-size:clamp(0.85rem,2.2vw,1.7rem);font-weight:900;color:var(--teal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stat-num-unpaid{font-size:clamp(0.85rem,2.2vw,1.6rem);font-weight:900;color:#e53e3e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stat-label{font-size:0.78rem;font-weight:700;color:var(--text-light);margin-top:2px;}
+.mobile-footer{display:none;text-align:center;font-size:0.75rem;font-weight:700;color:var(--text-light);padding-top:10px;padding-bottom:20px;opacity:0.7;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);}
+.modal-overlay.open{display:flex;animation:fadeInModal 0.2s ease;}
+@keyframes fadeInModal{from{opacity:0;}to{opacity:1;}}
+.modal{background:var(--white);border-radius:20px;padding:24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.modal-title{font-size:1.05rem;font-weight:800;color:var(--teal-dark);}
+.modal-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-light);line-height:1;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-light);}
+
+/* ===== EXAM COUNTDOWN ===== */
+.exam-countdown-widget{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(15,52,96,0.4);}
+.exam-countdown-widget::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(59,191,173,0.12);border-radius:50%;pointer-events:none;}
+.exam-countdown-widget::after{content:'';position:absolute;bottom:-30px;left:-30px;width:120px;height:120px;background:rgba(247,37,133,0.1);border-radius:50%;pointer-events:none;}
+.exam-cd-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;}
+.exam-cd-title{font-size:0.75rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.6);}
+.exam-cd-subtitle{font-size:1rem;font-weight:900;color:#fff;margin-top:4px;}
+.exam-cd-setting-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.8);border-radius:20px;padding:5px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;white-space:nowrap;}
+.exam-cd-setting-btn:hover{background:rgba(255,255,255,0.2);}
+.exam-cd-numbers{display:flex;gap:12px;justify-content:center;margin:12px 0;}
+.exam-cd-unit{display:flex;flex-direction:column;align-items:center;flex:1;}
+.exam-cd-num{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);border-radius:14px;width:100%;padding:12px 6px;font-size:clamp(1.4rem,4vw,2.2rem);font-weight:900;color:#fff;text-align:center;letter-spacing:1px;text-shadow:0 2px 10px rgba(59,191,173,0.5);transition:all 0.3s;}
+.exam-cd-num.highlight{color:#3bbfad;border-color:rgba(59,191,173,0.5);background:rgba(59,191,173,0.15);}
+.exam-cd-label{font-size:0.65rem;font-weight:800;color:rgba(255,255,255,0.5);margin-top:6px;text-transform:uppercase;letter-spacing:1px;}
+.exam-cd-progress-bar{height:6px;background:rgba(255,255,255,0.1);border-radius:10px;margin-top:14px;overflow:hidden;}
+.exam-cd-progress-fill{height:100%;background:linear-gradient(90deg,#3bbfad,#f72585);border-radius:10px;transition:width 1s ease;}
+.exam-cd-progress-text{font-size:0.72rem;color:rgba(255,255,255,0.5);font-weight:700;text-align:right;margin-top:6px;}
+.exam-cd-no-date{text-align:center;color:rgba(255,255,255,0.6);font-size:0.9rem;font-weight:700;padding:20px 0;}
+
+/* ===== HOMEWORK TRACKER ===== */
+.hw-tracker-section{margin-top:16px;padding-top:16px;border-top:2px dashed var(--border);}
+.hw-tracker-title{font-size:0.85rem;font-weight:800;color:var(--teal-dark);margin-bottom:10px;}
+.hw-btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+.hw-btn{padding:6px 14px;border-radius:20px;border:2px solid var(--border);background:var(--bg);font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;color:var(--text);transition:all 0.2s;}
+.hw-btn.active-done{background:#f0fff4;border-color:#38a169;color:#2f855a;}
+.hw-btn.active-missing{background:#fffbea;border-color:#d69e2e;color:#b7791f;}
+.hw-btn.active-none{background:#fff5f5;border-color:#fc8181;color:#c53030;}
+.hw-warning-badge{display:inline-flex;align-items:center;gap:4px;background:#fff5f5;border:1.5px solid #fc8181;color:#c53030;font-size:0.72rem;font-weight:800;padding:3px 10px;border-radius:20px;margin-left:8px;}
+
+/* ===== ZALO MESSAGE ===== */
+.zalo-preview-box{background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:16px;margin:14px 0;font-size:0.88rem;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:240px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.zalo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+.btn-zalo{background:#0068ff;color:white;border:none;padding:9px 18px;border-radius:30px;font-family:inherit;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;}
+.btn-zalo:hover{background:#0052cc;transform:translateY(-1px);}
+
+/* ===== TARGET BOX ===== */
+.target-box{background:var(--yellow-light);border:2px solid #fbbf24;border-radius:12px;padding:12px;}
+.target-label{color:#b45309;font-size:0.82rem;font-weight:700;display:block;margin-bottom:6px;}
+.target-input{flex:1;border-color:#fbbf24!important;}
+.target-btn{background:#fbbf24;color:#78350f;border:none;white-space:nowrap;font-weight:700;padding:8px 12px;border-radius:8px;font-family:inherit;font-size:0.85rem;cursor:pointer;transition:0.2s;}
+.target-btn:hover{background:#f59e0b;}
+.target-status{font-size:0.75rem;margin-top:6px;color:#b45309;font-weight:700;}
+body.dark .target-box{background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.4);}
+body.dark .target-label{color:#fcd34d;}
+body.dark .target-input{border-color:rgba(245,158,11,0.4)!important;background:rgba(0,0,0,0.2)!important;color:#fff!important;}
+body.dark .target-btn{background:rgba(245,158,11,0.2);color:#fcd34d;border:1px solid rgba(245,158,11,0.3);}
+body.dark .target-btn:hover{background:rgba(245,158,11,0.3);}
+body.dark .target-status{color:#fcd34d;}
+
+/* ===== FLATPICKR DARK MODE ===== */
+.flatpickr-input[readonly]{background-color:var(--white);color:var(--text);cursor:pointer;}
+body.dark .flatpickr-input[readonly]{background-color:#1e293b;color:#ffffff;border-color:#334155;}
+body.dark .flatpickr-calendar{background:#1e293b;border:1px solid #334155;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+body.dark .flatpickr-day{color:#e2e8f0;}
+body.dark .flatpickr-day:hover{background:#334155;border-color:#334155;color:#fff;}
+body.dark .flatpickr-day.selected{background:#2dd4bf;border-color:#2dd4bf;color:#0b1120;}
+body.dark .flatpickr-day.today{border-color:#f472b6;}
+body.dark .flatpickr-months .flatpickr-month{color:#e2e8f0;fill:#e2e8f0;}
+body.dark .flatpickr-current-month .flatpickr-monthDropdown-months{background:#1e293b;color:#e2e8f0;}
+body.dark span.flatpickr-weekday{color:#94a3b8;}
+
+/* ===== [MỚI] TODAY SCHEDULE BANNER ===== */
+.today-schedule-banner {
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 60%, #2dd4bf 100%);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.today-schedule-banner::before {
+  content: '';
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 120px; height: 120px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.tsb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.tsb-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.tsb-date {
+  font-size: 0.82rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.tsb-sessions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tsb-chip {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tsb-empty {
+  font-size: 0.88rem;
+  opacity: 0.75;
+  font-weight: 700;
+  padding: 4px 0;
+}
+.tsb-add-btn {
+  background: rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  color: white;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+.tsb-add-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* ===== [MỚI] RED ZONE ALERT ===== */
+.redzone-section {
+  background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+  border: 2px solid #fc8181;
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 20px;
+}
+body.dark .redzone-section {
+  background: linear-gradient(135deg, rgba(252,129,129,0.08) 0%, rgba(30,41,59,0.5) 100%);
+  border-color: rgba(252,129,129,0.4);
+}
+.redzone-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.redzone-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #c53030;
+}
+body.dark .redzone-title { color: #f87171; }
+.redzone-subtitle {
+  font-size: 0.75rem;
+  color: #e53e3e;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+body.dark .redzone-subtitle { color: #fc8181; }
+.redzone-pulse {
+  display: inline-block;
+  width: 10px; height: 10px;
+  background: #e53e3e;
+  border-radius: 50%;
+  animation: pulse-red 1.5s infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-red {
+  0%,100% { box-shadow: 0 0 0 0 rgba(229,62,62,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(229,62,62,0); }
+}
+.redzone-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  border-left: 3px solid #e53e3e;
+  gap: 10px;
+}
+body.dark .redzone-item { background: rgba(255,255,255,0.05); }
+.redzone-item-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.redzone-item-reason {
+  font-size: 0.75rem;
+  color: #c53030;
+  font-weight: 700;
+  margin-top: 2px;
+}
+body.dark .redzone-item-reason { color: #fc8181; }
+.redzone-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.redzone-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.redzone-tag-score { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+.redzone-tag-hw { background: #fffbea; color: #b7791f; border: 1px solid #fbbf24; }
+
+/* ===== [MỚI] KHO TÀI LIỆU ===== */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.doc-card {
+  background: var(--white);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  transition: all 0.2s;
+  position: relative;
+}
+.doc-card:hover {
+  border-color: var(--teal);
+  box-shadow: 0 4px 16px rgba(59,191,173,0.15);
+  transform: translateY(-1px);
+}
+.doc-card-icon {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+  display: block;
+}
+.doc-card-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.doc-card-subject {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.doc-card-desc {
+  font-size: 0.78rem;
+  color: var(--text-light);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.doc-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--teal-dark);
+  text-decoration: none;
+  background: var(--teal-light);
+  padding: 4px 10px;
+  border-radius: 20px;
+  word-break: break-all;
+  transition: 0.2s;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.doc-card-link:hover { background: var(--teal); color: white; }
+.doc-card-actions {
+  position: absolute;
+  top: 10px; right: 10px;
+  display: flex;
+  gap: 5px;
+}
+.doc-type-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+.doc-type-lesson { background: #e8f4fd; color: #2b6cb0; }
+.doc-type-exam { background: #fff5f5; color: #c53030; }
+.doc-type-reference { background: #f0fff4; color: #276749; }
+.doc-type-exercise { background: #fffbea; color: #b45309; }
+.doc-filter-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.doc-filter-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text-light);
+  transition: 0.2s;
+}
+.doc-filter-tab.active {
+  background: var(--teal);
+  color: white;
+  border-color: var(--teal);
+}
+.doc-copy-confirm {
+  display: none;
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2d3748;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  z-index: 9999;
+  animation: fadeInModal 0.2s ease;
+  white-space: nowrap;
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:640px){
+  .nav{padding:4px 8px;height:auto;min-height:52px;display:flex;align-items:center;overflow:hidden;}
+  .nav::-webkit-scrollbar{display:none;}
+  .nav-brand{display:none;}
+  .nav-tabs{flex:1;overflow-x:auto;scrollbar-width:none;justify-content:flex-start;gap:4px;padding:6px 0;margin-right:4px;}
+  .nav-tab{padding:8px 12px;font-size:0.75rem;flex:0 0 auto;border-radius:12px;}
+  .theme-btn{position:relative;right:auto;top:auto;margin-left:4px;background:var(--teal-light);border-radius:50%;width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+  .main{padding:12px 10px;padding-bottom:calc(80px + env(safe-area-inset-bottom));}
+  .card{padding:14px 12px;border-radius:14px;margin-bottom:12px;}
+  .stats-grid{grid-template-columns:1fr 1fr!important;gap:8px;}
+  .stat-card{padding:12px 8px;border-radius:12px;}
+  select{max-width:100%;box-sizing:border-box;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;}
+  .form-grid{grid-template-columns:minmax(0,1fr);}
+  input,select,textarea{max-width:100%;min-width:0;}
+  .student-grid{grid-template-columns:1fr;gap:10px;}
+  .phieu{width:100%!important;max-width:100%!important;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .modal{border-radius:20px 20px 0 0;max-height:92vh;}
+  .mobile-footer{display:block;}
+  .exam-cd-numbers{gap:8px;}
+  .exam-cd-num{font-size:1.4rem;padding:10px 4px;}
+  .doc-grid{grid-template-columns:1fr;}
+}
+
+/* =========================================
+   BẢN VÁ LỖI GIAO DIỆN VÀ TÙY CHỈNH THEME
+   ========================================= */
+
+/* 1. Ép 3 thẻ thống kê hiển thị cân đối trên 1 hàng ngang ở máy tính */
+@media(min-width: 641px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+    .stats-grid .stat-card {
+        grid-column: auto !important; /* Ghi đè style ép full hàng của thẻ cuối */
+    }
+}
+
+/* 2. Hiển thị trọn vẹn số tiền, tự động xuống dòng không bị mất số */
+.stat-num, .stat-num-unpaid {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    font-size: clamp(1.1rem, 2vw, 1.4rem) !important;
+    line-height: 1.2 !important;
+}
+
+/* 3. Tăng cỡ chữ phần "Doanh thu trung bình / tháng" */
+div:has(> #avg-revenue-display),
+#avg-revenue-display,
+.sticky-note b {
+    font-size: 1.15rem !important;
+}
+
+/* 4. Sửa lỗi tràn màn hình ở phần Nhập điểm mới */
+.form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+}
+
+/* 5. Cập nhật giao diện Sticky Note sang tone Xanh dương */
+.sticky-note {
+    background: #e8f4fd !important;
+    border-left-color: #2b6cb0 !important;
+    color: #1a365d !important;
+}
+body.dark .sticky-note {
+    background: rgba(43, 108, 176, 0.15) !important;
+    border-left-color: #93c5fd !important;
+    color: #93c5fd !important;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div style="font-size:2rem;font-weight:900;color:var(--teal-dark);">⭐</div>
+    <div style="font-size:1.1rem;font-weight:900;color:var(--teal-dark);text-align:center;">Quản lý lớp học gia sư</div>
+    <div style="font-size:0.75rem;color:var(--text-light);font-weight:700;">powered by namtruemilk</div>
+    <button onclick="loginGoogle()" class="btn btn-primary" style="gap:10px;padding:12px 24px;">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18"> Đăng nhập với Google
+    </button>
+    <div id="login-error" style="display:none;color:#e53e3e;font-size:0.8rem;font-weight:700;text-align:center;max-width:280px;line-height:1.5;"></div>
+  </div>
+</div>
+
+<!-- ===== TOP NAV ===== -->
+<div id="user-bar" style="display:none;background:var(--teal);color:white;padding:6px 20px;display:none!important;align-items:center;justify-content:space-between;font-size:0.8rem;font-weight:700;">
+  <span id="user-email"></span>
+  <button onclick="logoutUser()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 12px;border-radius:20px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">Đăng xuất</button>
+</div>
+<nav class="nav" style="display:none;">
+  <div class="nav-brand">⭐ powered by namtruemilk</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('page-home')">🏠 Tổng quan</button>
+    <button class="nav-tab" onclick="showPage('page-students')">👧 Học sinh</button>
+    <button class="nav-tab" onclick="showPage('page-groups')">👥 Nhóm</button>
+    <button class="nav-tab" onclick="showPage('page-attendance')">📅 Điểm danh</button>
+    <button class="nav-tab" onclick="showPage('page-grades')">📈 Sổ điểm</button>
+    <button class="nav-tab" onclick="showPage('page-phieu')">🧾 Học phí</button>
+    <button class="nav-tab" onclick="showPage('page-stats')">📊 Thống kê</button>
+    <button class="nav-tab" onclick="showPage('page-docs')">📁 Tài liệu</button>
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">🌙</span></button>
+</nav>
+
+<div class="main" style="display:none;">
+
+  <!-- ===== TRANG TỔNG QUAN ===== -->
+  <div id="page-home" class="page active">
+
+    <!-- [MỚI] LỊCH DẠY HÔM NAY -->
+    <div id="today-schedule-banner" class="today-schedule-banner" style="display:none;">
+      <div class="tsb-header">
+        <div>
+          <div class="tsb-title">📅 Lịch dạy hôm nay</div>
+          <div class="tsb-date" id="tsb-date-label"></div>
+        </div>
+        <button class="tsb-add-btn" onclick="showPage('page-attendance')">➕ Điểm danh ngay</button>
+      </div>
+      <div class="tsb-sessions" id="tsb-sessions-list">
+        <div class="tsb-empty">Chưa có buổi dạy nào hôm nay</div>
+      </div>
+    </div>
+
+    <!-- EXAM COUNTDOWN -->
+    <div class="exam-countdown-widget">
+      <div class="exam-cd-header">
+        <div>
+          <div class="exam-cd-title">⏳ Đếm ngược kỳ thi</div>
+          <div class="exam-cd-subtitle" id="exam-cd-name">Thi vào lớp 10</div>
+        </div>
+        <button class="exam-cd-setting-btn" onclick="openExamModal()">⚙️ Cài đặt ngày thi</button>
+      </div>
+      <div id="exam-countdown-content">
+        <div class="exam-cd-no-date">Chưa cài đặt ngày thi. Nhấn "⚙️ Cài đặt ngày thi" để bắt đầu!</div>
+      </div>
+    </div>
+
+    <!-- [MỚI] VÙNG ĐỎ -->
+    <div id="redzone-section" class="redzone-section" style="display:none;">
+      <div class="redzone-header">
+        <span class="redzone-pulse"></span>
+        <div>
+          <div class="redzone-title">⚠️ Cảnh báo — Vùng đỏ</div>
+          <div class="redzone-subtitle">Học sinh cần chú ý đặc biệt / liên hệ phụ huynh</div>
+        </div>
+      </div>
+      <div id="redzone-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📅 Chọn tháng:</div>
+        <select id="home-month" onchange="renderHome()" style="max-width:180px;"></select>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+    </div>
+
+    <!-- HOMEWORK WARNINGS -->
+    <div class="card" id="hw-warning-section" style="display:none;background:linear-gradient(135deg,#fff5f5,#fff);border:2px solid #fc8181;">
+      <div class="card-header" style="margin-bottom:12px;">
+        <div class="card-title" style="color:#c53030;">📝 Cảnh báo: Học sinh nợ bài tập</div>
+      </div>
+      <div id="hw-warning-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 Học sinh gần đây</div>
+        <button class="btn btn-outline btn-sm" onclick="showPage('page-students')">Xem tất cả</button>
+      </div>
+      <div id="recent-students"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px;">💾 Sao lưu dữ liệu</div>
+      <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:14px;">Xuất file để backup hoặc dùng trên thiết bị khác</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="exportData()">⬇️ Xuất dữ liệu</button>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;">⬆️ Nhập dữ liệu<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+      </div>
+    </div>
+    <div class="mobile-footer">powered by namtruemilk</div>
+  </div>
+
+  <!-- ===== TRANG HỌC SINH ===== -->
+  <div id="page-students" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">👧 Danh sách học sinh</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddStudent()">+ Thêm học sinh</button>
+      </div>
+      <input type="text" id="search-input" placeholder="🔍 Tìm học sinh..." oninput="renderStudents()" style="margin-bottom:16px;">
+      <div class="student-grid" id="student-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== TRANG NHÓM ===== -->
+  <div id="page-groups" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">👥 Quản lý &amp; Điểm danh Nhóm</div>
+      </div>
+      <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;">Hệ thống tự động gom nhóm dựa trên trường "Lớp". Bạn có thể bỏ tích những học sinh nghỉ phép trước khi bấm điểm danh.</p>
+      <div id="group-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== TRANG ĐIỂM DANH ===== -->
+  <div id="page-attendance" class="page">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:16px;">📅 Chọn học sinh</div>
+      <div class="student-grid" id="att-student-list"></div>
+    </div>
+    <div class="card" id="att-calendar-card" style="display:none;">
+      <div class="card-header">
+        <div class="card-title" id="att-student-name"></div>
+        <span id="att-count-label" style="font-size:0.85rem;font-weight:800;color:var(--teal);"></span>
+      </div>
+      <div class="calendar-layout">
+        <div>
+          <div class="month-header">
+            <button class="month-nav" onclick="changeMonth(-1)">‹</button>
+            <div class="month-label" id="month-label"></div>
+            <button class="month-nav" onclick="changeMonth(1)">›</button>
+          </div>
+          <div class="calendar" id="calendar"></div>
+          <button class="btn btn-outline btn-sm" style="margin-top:14px;" onclick="openMultiSessionModal()">+ Thêm ca học (Nhiều buổi/ngày)</button>
+        </div>
+        <div>
+          <div class="sticky-note">
+            <b>📌 Lưu ý điểm danh</b><br>
+            • <span style="display:inline-block;width:12px;height:12px;background:#4895ef;border-radius:3px;vertical-align:middle;"></span> <b>Màu xanh:</b> Học nhóm<br>
+            • <span style="display:inline-block;width:12px;height:12px;background:#f3722c;border-radius:3px;vertical-align:middle;"></span> <b>Màu cam:</b> Học riêng<br>
+            • <i>Nhấn 1 lần nữa để huỷ</i>
+          </div>
+          <!-- HOMEWORK TRACKER -->
+          <div class="hw-tracker-section">
+            <div class="hw-tracker-title">📝 Bài tập về nhà tháng này</div>
+            <div class="hw-btn-group">
+              <button id="hw-btn-done" class="hw-btn" onclick="setHomework('done')">✅ Đủ bài</button>
+              <button id="hw-btn-missing" class="hw-btn" onclick="setHomework('missing')">⚠️ Thiếu bài</button>
+              <button id="hw-btn-none" class="hw-btn" onclick="setHomework('none')">❌ Chưa làm</button>
+            </div>
+            <div id="hw-summary-display" style="margin-top:8px;font-size:0.78rem;font-weight:700;color:var(--text-light);">
+              Đánh giá tình trạng bài tập về nhà của tháng đang xem
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TRANG SỔ ĐIỂM ===== -->
+  <div id="page-grades" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📈 Sổ điểm &amp; Tiến độ học tập</div>
+        <select id="grade-student" onchange="renderGrades()" style="max-width:200px;">
+          <option value="">-- Chọn học sinh --</option>
+        </select>
+      </div>
+      <div id="grade-content" style="display:none;">
+        <div class="card" id="grade-subject-filter-card" style="display:none;box-shadow:none;border:2px solid var(--border);padding:14px;">
+          <div style="font-size:0.85rem;font-weight:800;color:var(--teal-dark);margin-bottom:10px;">📚 Lọc theo môn học</div>
+          <div id="grade-subject-tabs" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+        </div>
+        <div class="card" style="box-shadow:none;border:2px solid var(--border);padding:14px;">
+          <div style="font-size:0.85rem;font-weight:800;color:var(--teal-dark);margin-bottom:10px;">✏️ Nhập điểm mới</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Ngày kiểm tra</label>
+              <input type="text" id="grade-date" placeholder="dd/mm/yyyy">
+            </div>
+            <div class="form-group">
+              <label>Môn học</label>
+              <input type="text" id="grade-subject-input" placeholder="Toán, Văn, Anh...">
+            </div>
+            <div class="form-group">
+              <label>Tên bài kiểm tra</label>
+              <input type="text" id="grade-name" placeholder="KT 15 phút, GK, CK...">
+            </div>
+            <div class="form-group">
+              <label>Điểm số (0-10)</label>
+              <input type="number" id="grade-score" min="0" max="10" step="0.1" placeholder="7.5">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveGrade()">💾 Lưu điểm số</button>
+        </div>
+        <div class="card" style="box-shadow:none;border:2px solid #fbbf24;padding:14px;">
+          <div class="target-box" style="padding:0;border:none;background:none;">
+            <span class="target-label">🎯 Mục tiêu điểm số (vạch an toàn trên biểu đồ)</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="number" id="grade-target" class="target-input" min="0" max="10" step="0.1" placeholder="Nhập mục tiêu..." style="max-width:180px;">
+              <button class="target-btn" onclick="saveGradeTarget()">💾 Lưu mục tiêu</button>
+            </div>
+            <div class="target-status" id="grade-target-status">Chưa đặt mục tiêu</div>
+          </div>
+        </div>
+        <div class="card" style="box-shadow:none;border:2px solid var(--border);padding:14px;">
+          <div style="font-size:0.85rem;font-weight:800;color:var(--teal-dark);margin-bottom:10px;">📊 Biểu đồ tiến độ</div>
+          <div style="height:220px;"><canvas id="gradeChart"></canvas></div>
+        </div>
+        <div class="card" style="box-shadow:none;border:2px solid var(--border);padding:14px;">
+          <div style="font-size:0.85rem;font-weight:800;color:var(--teal-dark);margin-bottom:10px;">📋 Lịch sử điểm</div>
+          <div id="grade-history"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TRANG HỌC PHÍ ===== -->
+  <div id="page-phieu" class="page">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:18px;">🧾 Tạo phiếu học phí</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Học sinh</label>
+          <select id="phieu-student" onchange="fillPhieuFromStudent()">
+            <option value="">-- Chọn học sinh --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tháng</label>
+          <select id="phieu-month" onchange="calcTotal()"></select>
+        </div>
+        <div class="form-group">
+          <label>Số buổi học riêng</label>
+          <input type="number" id="phieu-private-sessions" min="0" value="0" oninput="calcTotal()">
+        </div>
+        <div class="form-group">
+          <label>Số buổi học nhóm</label>
+          <input type="number" id="phieu-group-sessions" min="0" value="0" oninput="calcTotal()">
+        </div>
+        <div class="form-group">
+          <label>💰 Tổng tiền (tự tính)</label>
+          <input type="text" id="phieu-total-display" readonly style="font-weight:800;color:var(--teal-dark);">
+        </div>
+        <div class="form-group">
+          <label>Tên lớp / Gia sư</label>
+          <input type="text" id="phieu-lop" placeholder="Lớp Học Gia Sư">
+        </div>
+        <div class="form-group full">
+          <label>Nhận xét</label>
+          <textarea id="phieu-comment" placeholder="Nhập nhận xét tháng này..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Mã QR Thanh Toán (Tùy chọn)</label>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <label class="btn btn-outline btn-sm" style="cursor:pointer;">+ Tải mã QR<input type="file" accept="image/*" style="display:none" onchange="handleQRUpload(event)"></label>
+            <button id="qr-remove-btn" class="btn btn-danger btn-sm" onclick="removeQR()" style="display:none;">Xóa QR</button>
+          </div>
+          <img id="qr-preview-img" style="display:none;width:80px;height:80px;border-radius:8px;object-fit:cover;border:2px solid var(--teal-light);margin-top:8px;">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+        <button class="btn btn-primary" onclick="generatePhieu()">✨ Tạo phiếu</button>
+        <button class="btn btn-outline" onclick="autoFillAttendance()">📅 Lấy từ điểm danh</button>
+        <button class="btn btn-pink" onclick="openZaloMessage()">💬 Tạo tin nhắn phụ huynh</button>
+      </div>
+    </div>
+    <div id="phieu-preview" style="display:none;" class="card">
+      <div class="card-header">
+        <div class="card-title">✅ Phiếu học phí</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="printPhieu()">🖨️ In phiếu</button>
+          <button class="btn btn-primary btn-sm" onclick="savePhieu()">💾 Lưu lịch sử</button>
+        </div>
+      </div>
+      <div class="phieu-wrap"><div class="phieu" id="phieu-display"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📂 Lịch sử phiếu</div>
+        <select id="history-month" onchange="renderPhieuHistory()" style="max-width:160px;"></select>
+      </div>
+      <div id="phieu-history"></div>
+    </div>
+  </div>
+
+  <!-- ===== TRANG THỐNG KÊ ===== -->
+  <div id="page-stats" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📊 Thống kê doanh thu</div>
+        <select id="stats-mode" onchange="renderStats()" style="max-width:180px;">
+          <option value="year">Chế độ: Theo Năm</option>
+          <option value="month">Chế độ: Theo Tháng</option>
+        </select>
+      </div>
+      <div id="stats-view-year">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <select id="stats-year" onchange="renderStatsYearly()" style="max-width:140px;"></select>
+        </div>
+        <div class="stats-grid" id="stats-year-grid"></div>
+        <div style="font-size:1rem;font-weight:800;color:var(--text-light);margin-bottom:8px;">
+          📈 Biểu đồ doanh thu<br>
+          <span style="font-size:0.9rem;">Doanh thu trung bình / tháng: <b id="avg-revenue-display" style="color:var(--teal);">0đ</b></span>
+        </div>
+        <div style="height:220px;"><canvas id="revenueChart"></canvas></div>
+      </div>
+      <div id="stats-view-month" style="display:none;">
+        <div style="margin-bottom:16px;">
+          <label style="font-size:0.82rem;font-weight:700;color:var(--text-light);display:block;margin-bottom:6px;">Chọn tháng:</label>
+          <select id="stats-month-picker" onchange="renderStatsMonthly()" style="max-width:180px;"></select>
+        </div>
+        <div class="stats-grid" id="stats-month-grid"></div>
+        <div style="font-size:0.85rem;font-weight:800;color:var(--teal-dark);margin-bottom:12px;">👩‍🎓 Chi tiết học sinh trong tháng</div>
+        <div id="stats-student-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== [MỚI] TRANG TÀI LIỆU ===== -->
+  <div id="page-docs" class="page">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📁 Kho tài liệu &amp; Bài tập</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddDoc()">+ Thêm tài liệu</button>
+      </div>
+      <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;">Lưu link tài liệu ôn tập, bài tập, đề thi... Khi cần có thể mở app và gửi link ngay cho học sinh.</p>
+      <div class="doc-filter-tabs" id="doc-filter-tabs">
+        <button class="doc-filter-tab active" onclick="setDocFilter('all')">📚 Tất cả</button>
+        <button class="doc-filter-tab" onclick="setDocFilter('lesson')">📖 Bài học</button>
+        <button class="doc-filter-tab" onclick="setDocFilter('exercise')">✏️ Bài tập</button>
+        <button class="doc-filter-tab" onclick="setDocFilter('exam')">📝 Đề thi</button>
+        <button class="doc-filter-tab" onclick="setDocFilter('reference')">🔖 Tham khảo</button>
+      </div>
+      <div style="margin-bottom:14px;">
+        <input type="text" id="doc-search" placeholder="🔍 Tìm tài liệu..." oninput="renderDocs()" style="">
+      </div>
+      <div class="doc-grid" id="doc-list">
+        <div class="empty-state">Chưa có tài liệu nào. Nhấn "+ Thêm tài liệu" để bắt đầu!</div>
+      </div>
+    </div>
+    <div class="mobile-footer">powered by namtruemilk</div>
+  </div>
+
+</div><!-- end .main -->
+
+<!-- ===== COPY CONFIRM TOAST ===== -->
+<div class="doc-copy-confirm" id="doc-copy-confirm">✅ Đã sao chép link!</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Modal: Thêm học sinh -->
+<div class="modal-overlay" id="modal-student">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-student-title">Thêm học sinh</div>
+      <button class="modal-close" onclick="closeModal('modal-student')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Họ và tên *</label>
+        <input type="text" id="s-name" placeholder="Nhập tên học sinh...">
+      </div>
+      <div class="form-group">
+        <label>Lớp (Nhập để chia Nhóm)</label>
+        <input type="text" id="s-grade" placeholder="12A1, 9B...">
+      </div>
+      <div class="form-group">
+        <label>Môn học</label>
+        <input type="text" id="s-subject" placeholder="Toán, Anh, Lý...">
+      </div>
+      <div class="form-group full">
+        <label>Hình thức học mặc định</label>
+        <div style="display:flex;gap:8px;">
+          <div id="type-btn-private" class="type-btn active" onclick="selectType('private')">👤 Học riêng</div>
+          <div id="type-btn-group" class="type-btn" onclick="selectType('group')">👥 Học nhóm</div>
+        </div>
+      </div>
+      <div class="form-group" id="field-price-private">
+        <label>Học phí/buổi (Riêng)</label>
+        <input type="number" id="s-price-private" value="150000">
+      </div>
+      <div class="form-group" id="field-price-group" style="display:none;">
+        <label>Học phí/buổi (Nhóm)</label>
+        <input type="number" id="s-price-group" value="80000">
+      </div>
+      <div class="form-group">
+        <label>SĐT phụ huynh</label>
+        <input type="tel" id="s-phone" placeholder="0912...">
+      </div>
+      <div class="form-group full">
+        <label>Ghi chú</label>
+        <textarea id="s-note" placeholder="Ghi chú thêm..."></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modal-student')">Hủy</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveStudent()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Thêm ca học -->
+<div class="modal-overlay" id="modal-multi-session">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Thêm ca học</div>
+      <button class="modal-close" onclick="closeModal('modal-multi-session')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Ngày</label>
+        <select id="ms-day"></select>
+      </div>
+      <div class="form-group">
+        <label>Buổi riêng</label>
+        <input type="number" id="ms-p" min="0" max="5" value="0">
+      </div>
+      <div class="form-group">
+        <label>Buổi nhóm</label>
+        <input type="number" id="ms-g" min="0" max="5" value="0">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modal-multi-session')">Hủy</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveMultiSession()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Xem phiếu học phí -->
+<div class="modal-overlay" id="modal-view-phieu">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-header">
+      <div class="modal-title">🧾 Phiếu học phí</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-outline btn-sm" onclick="printPhieuFromModal()">🖨️ In phiếu</button>
+        <button class="modal-close" onclick="closeModal('modal-view-phieu')">✕</button>
+      </div>
+    </div>
+    <div class="phieu-wrap"><div class="phieu" id="modal-view-phieu-content"></div></div>
+  </div>
+</div>
+
+<!-- Modal: Cài đặt ngày thi -->
+<div class="modal-overlay" id="modal-exam-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Cài đặt ngày thi</div>
+      <button class="modal-close" onclick="closeModal('modal-exam-settings')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Tên kỳ thi</label>
+        <input type="text" id="exam-name-input" value="Thi vào lớp 10" placeholder="Thi vào lớp 10...">
+      </div>
+      <div class="form-group">
+        <label>📅 Ngày thi dự kiến</label>
+        <input type="text" id="exam-date-input" placeholder="dd/mm/yyyy">
+      </div>
+      <div class="form-group">
+        <label>📅 Ngày bắt đầu ôn thi (để tính %)</label>
+        <input type="text" id="exam-start-input" placeholder="dd/mm/yyyy">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-danger btn-sm" onclick="clearExamSettings()">Xóa</button>
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modal-exam-settings')">Hủy</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveExamSettings()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Tin nhắn Zalo -->
+<div class="modal-overlay" id="modal-zalo-message">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div class="modal-title">💬 Tin nhắn báo cáo phụ huynh</div>
+      <button class="modal-close" onclick="closeModal('modal-zalo-message')">✕</button>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-light);margin-bottom:12px;">Hệ thống tự động tạo tin nhắn dựa trên dữ liệu học sinh. Bạn có thể chỉnh sửa trước khi gửi.</p>
+    <textarea id="zalo-message-text" style="min-height:200px;font-size:0.85rem;line-height:1.7;"></textarea>
+    <div id="zalo-copy-confirm" style="display:none;color:#38a169;font-size:0.8rem;font-weight:800;margin:6px 0;">✅ Đã sao chép vào clipboard!</div>
+    <div class="zalo-actions">
+      <button class="btn btn-outline btn-sm" onclick="regenerateZaloMessage()">🔄 Tạo lại</button>
+      <button class="btn btn-primary btn-sm" onclick="copyZaloMessage()">📋 Sao chép</button>
+      <a id="zalo-open-link" href="#" target="_blank" class="btn-zalo btn-sm" style="text-decoration:none;padding:6px 14px;font-size:0.78rem;border-radius:20px;" onclick="openZaloApp()">💬 Mở Zalo</a>
+    </div>
+  </div>
+</div>
+
+<!-- [MỚI] Modal: Thêm/Sửa tài liệu -->
+<div class="modal-overlay" id="modal-doc">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-doc-title">📁 Thêm tài liệu</div>
+      <button class="modal-close" onclick="closeModal('modal-doc')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Tiêu đề tài liệu *</label>
+        <input type="text" id="doc-title-input" placeholder="Đề thi HK1 Toán lớp 9...">
+      </div>
+      <div class="form-group">
+        <label>Môn học</label>
+        <input type="text" id="doc-subject-input" placeholder="Toán, Anh, Lý...">
+      </div>
+      <div class="form-group">
+        <label>Loại tài liệu</label>
+        <select id="doc-type-input">
+          <option value="lesson">📖 Bài học</option>
+          <option value="exercise">✏️ Bài tập</option>
+          <option value="exam">📝 Đề thi</option>
+          <option value="reference">🔖 Tham khảo</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>🔗 Link tài liệu (Google Drive, Docs, v.v.)</label>
+        <input type="url" id="doc-url-input" placeholder="https://drive.google.com/...">
+      </div>
+      <div class="form-group full">
+        <label>Mô tả ngắn (tùy chọn)</label>
+        <textarea id="doc-desc-input" placeholder="Ghi chú về tài liệu này..."></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modal-doc')">Hủy</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveDoc()">💾 Lưu tài liệu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== BIẾN TOÀN CỤC (GIỮ NGUYÊN) =====
+let revenueChartInstance = null;
+let gradeChartInstance = null;
+let currentGradeSubject = 'Tất cả';
+const now = new Date();
+let currentYear = now.getFullYear();
+let currentMonth = now.getMonth();
+let currentUser = null;
+let db = { students: [], attendance: {}, phieus: [], grades: {} };
+let saveTimeout = null;
+let editingStudentId = null;
+let selectedStudentId = null;
+
+// ===== DARK MODE (GIỮ NGUYÊN) =====
+function toggleTheme() {
+  document.body.classList.toggle('dark');
+  const isDark = document.body.classList.contains('dark');
+  localStorage.setItem('giasu_theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+}
+if(localStorage.getItem('giasu_theme') === 'dark') {
+  document.body.classList.add('dark');
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById('theme-icon').textContent = '☀️';
+  });
+}
+
+function populateMonthSelects() {
+  const years = new Set();
+  for (let y = currentYear - 3; y <= currentYear + 3; y++) years.add(y);
+  if (db.phieus) db.phieus.forEach(p => { if(p.month) years.add(parseInt(p.month.split('-')[0])); });
+  const sortedYears = Array.from(years).sort((a,b) => b - a);
+  let options = '';
+  sortedYears.forEach(y => {
+    for (let m = 12; m >= 1; m--) {
+      const val = `${y}-${String(m).padStart(2, '0')}`;
+      options += `<option value="${val}">Tháng ${m}/${y}</option>`;
+    }
+  });
+  const defaultVal = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  ['home-month', 'phieu-month', 'history-month', 'stats-month-picker'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      const currentVal = el.value || defaultVal;
+      el.innerHTML = options;
+      if (options.includes(`value="${currentVal}"`)) el.value = currentVal;
+      else el.value = defaultVal;
+    }
+  });
+}
+populateMonthSelects();
+
+// ===== FIREBASE (GIỮ NGUYÊN) =====
+const firebaseConfig = {
+  apiKey: "AIzaSyD_Bf1lv5o4iS0MQO3kByCXWaNOfBESmpc",
+  authDomain: "namtruemilk-372004.firebaseapp.com",
+  projectId: "namtruemilk-372004",
+  storageBucket: "namtruemilk-372004.firebasestorage.app",
+  messagingSenderId: "1007380648727",
+  appId: "1:1007380648727:web:7be9b430e6884db2619d52"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const firestore = firebase.firestore();
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.error);
+
+function loginGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => {
+    document.getElementById('login-error').style.display = 'block';
+    if (err.code === 'auth/popup-blocked') {
+      document.getElementById('login-error').innerHTML = 'Trình duyệt đang chặn cửa sổ đăng nhập. Vui lòng cấp quyền mở Popup cho trang này!';
+    } else if (err.code === 'auth/cancelled-popup-request') {
+      document.getElementById('login-error').innerHTML = 'Tiến trình đăng nhập bị hủy. Vui lòng bấm thử lại!';
+    } else {
+      document.getElementById('login-error').textContent = 'Lỗi: ' + err.message;
+    }
+  });
+}
+function logoutUser() { auth.signOut(); }
+
+async function loadDb() {
+  if (!currentUser) return;
+  try {
+    const doc = await firestore.collection('users').doc(currentUser.uid).get();
+    if (doc.exists) {
+      db = doc.data();
+      db.students = db.students || [];
+      db.attendance = db.attendance || {};
+      db.phieus = db.phieus || [];
+      db.grades = db.grades || {};
+    } else db = { students: [], attendance: {}, phieus: [], grades: {} };
+  } catch(e) {
+    db = JSON.parse(localStorage.getItem('giasu_db_' + currentUser.uid) || '{"students":[],"attendance":{},"phieus":[],"grades":{}}');
+  }
+  populateMonthSelects();
+}
+
+function save() {
+  if (!currentUser) return;
+  localStorage.setItem('giasu_db_' + currentUser.uid, JSON.stringify(db));
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error), 1000);
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('user-bar').style.display = 'flex';
+  document.getElementById('user-email').textContent = '👤 ' + (currentUser.displayName || currentUser.email);
+  document.querySelector('.nav').style.display = 'flex';
+  document.querySelector('.main').style.display = 'block';
+  renderHome();
+}
+
+function hideApp() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('user-bar').style.display = 'none';
+  document.querySelector('.nav').style.display = 'none';
+  document.querySelector('.main').style.display = 'none';
+  db = { students: [], attendance: {}, phieus: [], grades: {} };
+}
+
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    currentUser = user;
+    await loadDb();
+    showApp();
+  } else {
+    currentUser = null;
+    hideApp();
+  }
+});
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = ['page-home','page-students','page-groups','page-attendance','page-grades','page-phieu','page-stats','page-docs'].indexOf(id);
+  if(idx >= 0) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+  if (id === 'page-home') renderHome();
+  if (id === 'page-students') renderStudents();
+  if (id === 'page-groups') renderGroups();
+  if (id === 'page-attendance') renderAttStudents();
+  if (id === 'page-grades') { currentGradeSubject = 'Tất cả'; renderGradeStudentSelect(); }
+  if (id === 'page-phieu') { renderPhieuStudentSelect(); renderPhieuHistory(); renderQRPreview(); }
+  if (id === 'page-stats') renderStats();
+  if (id === 'page-docs') renderDocs();
+}
+
+// ===== GROUPS PAGE (GIỮ NGUYÊN) =====
+function renderGroups() {
+  const groups = {};
+  db.students.forEach(s => {
+    const g = s.grade || 'Chưa phân lớp';
+    if(!groups[g]) groups[g] = [];
+    groups[g].push(s);
+  });
+  let html = '';
+  let gIndex = 0;
+  for(let g in groups) {
+    html += `
+      <div class="card" id="group-card-${gIndex}" style="border:2px solid var(--border);box-shadow:none;margin-bottom:12px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <h4 style="color:var(--teal-dark);font-weight:800;font-size:1.05rem;">🏷️ Nhóm: ${g} <span style="font-size:0.8rem;color:var(--text-light);font-weight:600;">(${groups[g].length} HS)</span></h4>
+          <button class="btn btn-primary btn-sm" onclick="bulkAttend(${gIndex}, '${g}')">✅ Điểm danh Nhóm hôm nay</button>
+        </div>
+        <div style="margin-top:12px;">
+          ${groups[g].map(s => `<label class="student-check-badge"><input type="checkbox" value="${s.id}" class="group-student-check" checked> 👤 ${s.name}</label>`).join('')}
+        </div>
+      </div>`;
+    gIndex++;
+  }
+  document.getElementById('group-list').innerHTML = html || '<div class="empty-state">Chưa có học sinh nào.</div>';
+}
+
+function bulkAttend(gIndex, gradeName) {
+  const card = document.getElementById(`group-card-${gIndex}`);
+  const checkboxes = card.querySelectorAll('.group-student-check:checked');
+  const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+  if (selectedIds.length === 0) return alert('Vui lòng để lại dấu tích cho ít nhất 1 học sinh!');
+  if(!confirm(`Xác nhận điểm danh "Học nhóm" cho ${selectedIds.length} học sinh đang được tích trong nhóm ${gradeName} vào hôm nay?`)) return;
+  const today = new Date().getDate();
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  selectedIds.forEach(sid => {
+    if (!db.attendance[sid]) db.attendance[sid] = {};
+    if (!db.attendance[sid][key]) db.attendance[sid][key] = {};
+    db.attendance[sid][key][today] = 'group';
+  });
+  save();
+  alert('✅ Đã điểm danh thành công!');
+}
+
+// ===== GRADES PAGE (GIỮ NGUYÊN) =====
+function renderGradeStudentSelect() {
+  document.getElementById('grade-student').innerHTML = '<option value="">-- Chọn học sinh --</option>' + db.students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  document.getElementById('grade-content').style.display = 'none';
+}
+
+function setGradeSubject(sub) { currentGradeSubject = sub; renderGrades(); }
+
+function renderGrades() {
+  const sid = document.getElementById('grade-student').value;
+  if(!sid) { document.getElementById('grade-content').style.display = 'none'; return; }
+  document.getElementById('grade-content').style.display = 'block';
+  if (!window.gradeDatePicker) {
+    window.gradeDatePicker = flatpickr("#grade-date", { dateFormat:"Y-m-d", altInput:true, altFormat:"d/m/Y", locale:"vn", disableMobile:true, defaultDate:new Date() });
+  } else { window.gradeDatePicker.setDate(new Date()); }
+  db.grades = db.grades || {};
+  const allGrades = db.grades[sid] || [];
+  allGrades.sort((a,b) => new Date(a.date) - new Date(b.date));
+  const subjects = [...new Set(allGrades.map(g => g.subject || 'Chung'))];
+  if (subjects.length > 0 && !subjects.includes(currentGradeSubject) && currentGradeSubject !== 'Tất cả') { currentGradeSubject = 'Tất cả'; }
+  let tabsHtml = `<button class="btn btn-sm ${currentGradeSubject === 'Tất cả' ? 'btn-primary' : 'btn-outline'}" onclick="setGradeSubject('Tất cả')">Tất cả</button>`;
+  subjects.forEach(sub => { tabsHtml += `<button class="btn btn-sm ${currentGradeSubject === sub ? 'btn-primary' : 'btn-outline'}" onclick="setGradeSubject('${sub}')">${sub}</button>`; });
+  document.getElementById('grade-subject-tabs').innerHTML = tabsHtml;
+  document.getElementById('grade-subject-filter-card').style.display = subjects.length > 0 ? 'block' : 'none';
+  const grades = currentGradeSubject === 'Tất cả' ? allGrades : allGrades.filter(g => (g.subject || 'Chung') === currentGradeSubject);
+  if (currentGradeSubject !== 'Tất cả') { document.getElementById('grade-subject-input').value = currentGradeSubject; }
+  const targets = db.gradeTargets || {};
+  let targetObj = targets[sid];
+  if (typeof targetObj === 'number' || typeof targetObj === 'string') { targetObj = { 'Chung': parseFloat(targetObj) }; targets[sid] = targetObj; }
+  targetObj = targetObj || {};
+  const targetKey = currentGradeSubject === 'Tất cả' ? 'Chung' : currentGradeSubject;
+  const target = targetObj[targetKey];
+  if (target) {
+    document.getElementById('grade-target').value = target;
+    document.getElementById('grade-target-status').innerHTML = `✅ Mục tiêu hiện tại (Môn ${targetKey}): <b>${target} điểm</b>`;
+  } else {
+    document.getElementById('grade-target').value = '';
+    document.getElementById('grade-target-status').textContent = 'Chưa đặt mục tiêu';
+  }
+  document.getElementById('grade-history').innerHTML = grades.length ? grades.map(g => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed var(--border);">
+      <div>
+        <strong style="color:var(--text);font-size:0.95rem;">📝 ${g.name} ${g.subject && g.subject !== 'Chung' ? `<span style="font-size:0.75rem;color:#fff;background:var(--teal);padding:2px 6px;border-radius:10px;margin-left:4px;">${g.subject}</span>` : ''}</strong>
+        <div style="font-size:0.75rem;color:var(--text-light);margin-top:3px;">📅 ${g.date.split('-').reverse().join('/')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-weight:900;color:var(--white);font-size:1.2rem;background:var(--pink);padding:2px 10px;border-radius:10px;">${g.score}</span>
+        <button class="btn btn-danger btn-sm" style="color:white" onclick="deleteGrade('${sid}', '${g.id}')">✕</button>
+      </div>
+    </div>`).reverse().join('') : '<div class="empty-state">Chưa có điểm số nào. Hãy thêm điểm ở trên.</div>';
+  if(gradeChartInstance) gradeChartInstance.destroy();
+  const chartData = { labels: grades.map(g => g.name), datasets: [{ label:'Điểm số', data:grades.map(g=>g.score), borderColor:'#f72585', backgroundColor:'rgba(247,37,133,0.15)', fill:true, tension:0.3, pointBackgroundColor:'#f72585', pointRadius:4 }] };
+  if (target && grades.length > 0) {
+    chartData.datasets.push({ label:`🎯 Mục tiêu: ${target}`, data:grades.map(()=>parseFloat(target)), borderColor:'#f59e0b', borderWidth:2, borderDash:[8,4], pointRadius:0, fill:false, tension:0, backgroundColor:'transparent' });
+  }
+  gradeChartInstance = new Chart(document.getElementById('gradeChart').getContext('2d'), {
+    type:'line', data:chartData,
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:target?true:false, labels:{ font:{family:'Nunito',weight:'700'}, boxWidth:20 } } }, scales:{ y:{ min:0, max:10 } } }
+  });
+}
+
+function saveGradeTarget() {
+  const sid = document.getElementById('grade-student').value;
+  if(!sid) return alert('Vui lòng chọn học sinh trước!');
+  const target = parseFloat(document.getElementById('grade-target').value);
+  if(isNaN(target) || target < 0 || target > 10) return alert('Vui lòng nhập mục tiêu điểm hợp lệ (0-10)!');
+  db.gradeTargets = db.gradeTargets || {};
+  if (typeof db.gradeTargets[sid] === 'number' || typeof db.gradeTargets[sid] === 'string') { db.gradeTargets[sid] = { 'Chung': parseFloat(db.gradeTargets[sid]) }; }
+  db.gradeTargets[sid] = db.gradeTargets[sid] || {};
+  const targetKey = currentGradeSubject === 'Tất cả' ? 'Chung' : currentGradeSubject;
+  db.gradeTargets[sid][targetKey] = target;
+  save();
+  document.getElementById('grade-target-status').innerHTML = `✅ Đã lưu mục tiêu (Môn ${targetKey}): <b>${target} điểm</b>`;
+  renderGrades();
+}
+
+function saveGrade() {
+  const sid = document.getElementById('grade-student').value;
+  const date = document.getElementById('grade-date').value;
+  const subject = document.getElementById('grade-subject-input').value.trim() || 'Chung';
+  const name = document.getElementById('grade-name').value.trim();
+  const score = parseFloat(document.getElementById('grade-score').value);
+  if(!sid || !date || !name || isNaN(score)) return alert('Vui lòng nhập đầy đủ thông tin và điểm số hợp lệ!');
+  db.grades = db.grades || {};
+  db.grades[sid] = db.grades[sid] || [];
+  db.grades[sid].push({ id: Date.now().toString(), date, subject, name, score });
+  save();
+  currentGradeSubject = subject;
+  renderGrades();
+  document.getElementById('grade-name').value = '';
+  document.getElementById('grade-score').value = '';
+}
+
+function deleteGrade(sid, gid) {
+  if(!confirm('Xóa bài kiểm tra này khỏi sổ điểm?')) return;
+  db.grades[sid] = db.grades[sid].filter(g => g.id !== gid);
+  save();
+  renderGrades();
+}
+
+// ===== TRANG TỔNG QUAN (GIỮ NGUYÊN + THÊM MỚI) =====
+function renderHome() {
+  const total = db.students.length;
+  let selectedMonth = document.getElementById('home-month').value;
+  let totalFee = 0, totalSessions = 0;
+  db.students.forEach(s => {
+    let attObj = db.attendance[s.id]?.[selectedMonth];
+    if (Array.isArray(attObj)) { totalSessions += attObj.length; totalFee += attObj.length * (s.pricePrivate || s.price || 0); }
+    else if (attObj) {
+      Object.values(attObj).forEach(val => {
+        let p = 0, g = 0;
+        if (!val) return;
+        if (val === 'private') p = 1;
+        else if (val === 'group') g = 1;
+        else if (typeof val === 'string' && val.startsWith('p:')) { const parts = val.split(','); p = parseInt((parts[0]||'').split(':')[1])||0; g = parseInt((parts[1]||'').split(':')[1])||0; }
+        totalSessions += (p + g);
+        totalFee += (p * (s.pricePrivate || s.price || 0)) + (g * (s.priceGroup || s.price || 0));
+      });
+    }
+  });
+  const monthNumber = parseInt(selectedMonth.split('-')[1]);
+  const unpaidTotal = (db.phieus || []).filter(p => p.month === selectedMonth && !p.paid).reduce((sum, p) => sum + (p.total || 0), 0);
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">Học sinh</div></div>
+    <div class="stat-card"><div class="stat-num">${totalSessions}</div><div class="stat-label">Buổi học tháng ${monthNumber}</div></div>
+    <div class="stat-card"><div class="stat-num">${fmt(totalFee)}đ</div><div class="stat-label">Doanh thu tháng ${monthNumber}</div></div>
+    <div class="stat-card" style="border:2px solid var(--border);background:var(--bg);">
+      <div class="stat-num-unpaid">${fmt(unpaidTotal)}đ</div>
+      <div class="stat-label" style="color:#e53e3e;">Học phí chưa thanh toán</div>
+    </div>`;
+  const rec = db.students.slice(-5).reverse();
+  document.getElementById('recent-students').innerHTML = rec.length ? rec.map(s => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div><div style="font-weight:800;font-size:.9rem">${s.name}</div><div style="font-size:.78rem;color:var(--text-light)">${s.grade||''} ${s.subject?'· '+s.subject:''}</div></div>
+      <span style="font-weight:700;color:var(--teal);">${fmt(s.type==='group'?(s.priceGroup||s.price||0):(s.pricePrivate||s.price||0))}đ/buổi</span>
+    </div>`).join('') : '<div class="empty-state"><p>Chưa có học sinh nào</p></div>';
+  renderExamCountdown();
+  renderHomeworkWarnings();
+  renderTodaySchedule();   // [MỚI]
+  renderRedZoneAlerts();   // [MỚI]
+}
+
+// ===== EXAM COUNTDOWN (GIỮ NGUYÊN) =====
+function renderExamCountdown() {
+  const examSettings = db.examSettings || {};
+  const contentEl = document.getElementById('exam-countdown-content');
+  const nameEl = document.getElementById('exam-cd-name');
+  if (!examSettings.date) { contentEl.innerHTML = `<div class="exam-cd-no-date">Chưa cài đặt ngày thi. Nhấn "⚙️ Cài đặt ngày thi" để bắt đầu!</div>`; return; }
+  nameEl.textContent = examSettings.name || 'Thi vào lớp 10';
+  const examDate = new Date(examSettings.date); examDate.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diffMs = examDate - today;
+  const diffDays = Math.ceil(diffMs / (1000*60*60*24));
+  if (diffDays < 0) { contentEl.innerHTML = `<div class="exam-cd-no-date" style="color:#f472b6;">🎉 Kỳ thi đã diễn ra ${Math.abs(diffDays)} ngày trước. Chúc các em đạt kết quả tốt!</div>`; return; }
+  if (diffDays === 0) { contentEl.innerHTML = `<div class="exam-cd-no-date" style="color:#fbbf24;font-size:1.2rem;">🔥 HÔM NAY LÀ NGÀY THI! Chúc các em thật bình tĩnh và đạt kết quả cao!</div>`; return; }
+  const weeks = Math.floor(diffDays/7); const days = diffDays%7; const hours = new Date().getHours();
+  let progressPercent = 0, progressText = '';
+  if (examSettings.startDate) {
+    const startDate = new Date(examSettings.startDate); startDate.setHours(0,0,0,0);
+    const totalDays = Math.ceil((examDate-startDate)/(1000*60*60*24));
+    const passedDays = Math.ceil((today-startDate)/(1000*60*60*24));
+    if (totalDays > 0 && passedDays >= 0) { progressPercent = Math.min(100,Math.round((passedDays/totalDays)*100)); progressText = `Đã ôn thi ${progressPercent}% lộ trình`; }
+  }
+  contentEl.innerHTML = `
+    <div class="exam-cd-numbers">
+      <div class="exam-cd-unit"><div class="exam-cd-num ${diffDays<30?'highlight':''}">${diffDays}</div><div class="exam-cd-label">NGÀY</div></div>
+      <div class="exam-cd-unit"><div class="exam-cd-num">${weeks}</div><div class="exam-cd-label">TUẦN</div></div>
+      <div class="exam-cd-unit"><div class="exam-cd-num">${days}</div><div class="exam-cd-label">NGÀY LẺ</div></div>
+      <div class="exam-cd-unit"><div class="exam-cd-num">${String(24-hours).padStart(2,'0')}</div><div class="exam-cd-label">GIỜ CÒN LẠI</div></div>
+    </div>
+    <div style="text-align:center;font-size:0.78rem;color:rgba(255,255,255,0.6);margin-bottom:8px;">
+      📅 Ngày thi: <b style="color:rgba(255,255,255,0.9);">${examDate.toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</b>
+    </div>
+    ${progressPercent > 0 ? `<div class="exam-cd-progress-bar"><div class="exam-cd-progress-fill" style="width:${progressPercent}%;"></div></div><div class="exam-cd-progress-text">${progressText}</div>` : ''}`;
+}
+
+function saveExamSettings() {
+  const name = document.getElementById('exam-name-input').value.trim() || 'Thi vào lớp 10';
+  const date = document.getElementById('exam-date-input').value;
+  const startDate = document.getElementById('exam-start-input').value;
+  if(!date) return alert('Vui lòng chọn ngày thi!');
+  db.examSettings = { name, date, startDate };
+  save(); closeModal('modal-exam-settings'); renderExamCountdown();
+}
+function clearExamSettings() {
+  if(!confirm('Xóa cài đặt ngày thi?')) return;
+  delete db.examSettings; save(); closeModal('modal-exam-settings'); renderExamCountdown();
+}
+function openExamModal() {
+  const s = db.examSettings || {};
+  document.getElementById('exam-name-input').value = s.name || 'Thi vào lớp 10';
+  if (!window.examDateDp) window.examDateDp = flatpickr("#exam-date-input", { dateFormat:"Y-m-d", altInput:true, altFormat:"d/m/Y", locale:"vn", disableMobile:true });
+  if (s.date) window.examDateDp.setDate(s.date); else window.examDateDp.clear();
+  if (!window.examStartDp) window.examStartDp = flatpickr("#exam-start-input", { dateFormat:"Y-m-d", altInput:true, altFormat:"d/m/Y", locale:"vn", disableMobile:true });
+  if (s.startDate) window.examStartDp.setDate(s.startDate); else window.examStartDp.clear();
+  openModal('modal-exam-settings');
+}
+
+// ===== HOMEWORK TRACKER (GIỮ NGUYÊN) =====
+function setHomework(status) {
+  if(!selectedStudentId) return;
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  db.homework = db.homework || {};
+  db.homework[selectedStudentId] = db.homework[selectedStudentId] || {};
+  if (db.homework[selectedStudentId][key] === status) { delete db.homework[selectedStudentId][key]; }
+  else { db.homework[selectedStudentId][key] = status; }
+  save(); renderHomeworkStatus();
+}
+function renderHomeworkStatus() {
+  if(!selectedStudentId) return;
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  const status = db.homework?.[selectedStudentId]?.[key] || '';
+  ['done','missing','none'].forEach(s => { const btn = document.getElementById(`hw-btn-${s}`); if(btn) { btn.className='hw-btn'; if(status===s) btn.classList.add(`active-${s}`); } });
+  const summaryEl = document.getElementById('hw-summary-display');
+  if(summaryEl) {
+    const labels = { done:'✅ Đã ghi: Đủ bài', missing:'⚠️ Đã ghi: Thiếu bài', none:'❌ Đã ghi: Chưa làm bài' };
+    summaryEl.textContent = labels[status] || 'Chưa ghi nhận tình trạng bài tập tháng này.';
+    summaryEl.style.color = status==='done'?'#38a169':status==='missing'?'#d69e2e':status==='none'?'#c53030':'var(--text-light)';
+  }
+}
+function renderHomeworkWarnings() {
+  const warningSection = document.getElementById('hw-warning-section');
+  const warningList = document.getElementById('hw-warning-list');
+  const selectedMonth = document.getElementById('home-month').value;
+  if(!db.homework || !warningSection) return;
+  const warnings = [];
+  db.students.forEach(s => {
+    const status = db.homework?.[s.id]?.[selectedMonth];
+    if(status === 'missing' || status === 'none') warnings.push({ name:s.name, status });
+  });
+  if(warnings.length === 0) { warningSection.style.display = 'none'; return; }
+  warningSection.style.display = 'block';
+  warningList.innerHTML = warnings.map(w => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #fed7d7;">
+      <span style="font-weight:700;font-size:0.9rem;">👤 ${w.name}</span>
+      <span style="font-size:0.78rem;font-weight:800;padding:3px 10px;border-radius:20px;background:${w.status==='none'?'#fff5f5':'#fffbea'};color:${w.status==='none'?'#c53030':'#b7791f'};border:1.5px solid ${w.status==='none'?'#fc8181':'#fbbf24'};">
+        ${w.status==='none'?'❌ Chưa làm bài':'⚠️ Thiếu bài'}
+      </span>
+    </div>`).join('');
+}
+
+// ===== ZALO AUTO-MESSAGE (GIỮ NGUYÊN) =====
+let zaloCurrentStudentId = null;
+function openZaloMessage() {
+  const studentId = document.getElementById('phieu-student').value;
+  if(!studentId) return alert('Vui lòng chọn học sinh trước!');
+  zaloCurrentStudentId = studentId;
+  generateZaloMessageContent();
+  openModal('modal-zalo-message');
+}
+function generateZaloMessageContent() {
+  const sid = zaloCurrentStudentId;
+  if(!sid) return;
+  const s = db.students.find(x => x.id === sid);
+  if(!s) return;
+  const month = document.getElementById('phieu-month').value;
+  const monthNum = parseInt(month.split('-')[1]);
+  const yearNum = month.split('-')[0];
+  const p = parseInt(document.getElementById('phieu-private-sessions').value) || 0;
+  const g = parseInt(document.getElementById('phieu-group-sessions').value) || 0;
+  const sessions = p + g;
+  const total = p*(s.pricePrivate||s.price||0) + g*(s.priceGroup||s.price||0);
+  const grades = db.grades?.[sid] || [];
+  let avgText = '';
+  if(grades.length > 0) {
+    const avg = (grades.reduce((sum,gr)=>sum+gr.score,0)/grades.length).toFixed(1);
+    let targetNote = '';
+    const targetObj = db.gradeTargets?.[sid];
+    if (targetObj) { const target = typeof targetObj==='number'?targetObj:targetObj['Chung']; if(target) { targetNote = (parseFloat(avg)>=target?` (đã đạt mục tiêu 🎯)`:`(mục tiêu ${target} - đang nỗ lực 💪)`); } }
+    avgText = `Điểm trung bình các bài kiểm tra là *${avg}*${targetNote}. `;
+  }
+  const hwStatus = db.homework?.[sid]?.[month];
+  let hwText = '';
+  if(hwStatus==='done') hwText = 'Bé học bài và làm bài tập đầy đủ. ';
+  else if(hwStatus==='missing') hwText = 'Tuy nhiên bé còn thiếu một số bài tập về nhà, mong anh/chị nhắc nhở thêm ạ. ';
+  else if(hwStatus==='none') hwText = 'Lưu ý: Bé chưa hoàn thành bài tập về nhà trong tháng này, rất mong anh/chị phối hợp nhắc nhở ạ. ';
+  const comment = document.getElementById('phieu-comment').value.trim();
+  const commentText = comment ? `
+
+💬 Nhận xét của em về bé: "${comment}"` : '';
+  const message = `Dạ em chào anh/chị ạ! 🌟 Em gửi báo cáo học tập tháng ${monthNum}/${yearNum} của bé *${s.name}* ạ.
+
+📚 *Tháng này bé đi học ${sessions} buổi* (${p>0?`${p} buổi riêng`:''}${p>0&&g>0?', ':''}${g>0?`${g} buổi nhóm`:''}).
+
+📊 ${avgText}${hwText}
+
+💰 *Học phí tháng ${monthNum}: ${fmt(total)}đ* ${commentText}
+
+Anh/chị xem lại chi tiết và thanh toán học phí giúp em nhé ạ! 🙏
+Em cảm ơn anh/chị ạ! 😊`;
+  document.getElementById('zalo-message-text').value = message;
+  document.getElementById('zalo-copy-confirm').style.display = 'none';
+}
+function regenerateZaloMessage() { generateZaloMessageContent(); }
+function copyZaloMessage() {
+  const text = document.getElementById('zalo-message-text').value;
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => { const c=document.getElementById('zalo-copy-confirm'); c.style.display='block'; setTimeout(()=>c.style.display='none',3000); });
+  } else { const el=document.getElementById('zalo-message-text'); el.select(); document.execCommand('copy'); const c=document.getElementById('zalo-copy-confirm'); c.style.display='block'; setTimeout(()=>c.style.display='none',3000); }
+}
+function openZaloApp() {
+  const text = encodeURIComponent(document.getElementById('zalo-message-text').value);
+  window.open(`https://zalo.me/`, '_blank');
+}
+
+// ===== TRANG HỌC SINH (GIỮ NGUYÊN) =====
+let currentType = 'private';
+function selectType(type) {
+  currentType = type;
+  document.getElementById('type-btn-private').classList.toggle('active', type==='private');
+  document.getElementById('type-btn-group').classList.toggle('active', type==='group');
+  document.getElementById('field-price-private').style.display = type==='private' ? '' : 'none';
+  document.getElementById('field-price-group').style.display = type==='group' ? '' : 'none';
+}
+function renderStudents() {
+  const q = document.getElementById('search-input')?.value?.toLowerCase() || '';
+  const list = db.students.filter(s => s.name.toLowerCase().includes(q));
+  const el = document.getElementById('student-list');
+  if (!list.length) { el.innerHTML = `<div class="empty-state"><p>Chưa có học sinh nào</p></div>`; return; }
+  el.innerHTML = list.map(s => `
+    <div class="student-card">
+      <div style="position:absolute;top:10px;right:10px;">${s.type==='group'?'<span class="badge-group">👥 Nhóm</span>':'<span class="badge-private">👤 Riêng</span>'}</div>
+      <div class="student-name">👤 ${s.name}</div>
+      <div class="student-meta">${s.grade||''}${s.subject?' · '+s.subject:''}</div>
+      <div class="student-meta" style="margin-top:3px">💰 ${fmt(s.type==='group'?(s.priceGroup||s.price||0):(s.pricePrivate||s.price||0))}đ/buổi</div>
+      ${s.phone?`<div class="student-meta">📞 ${s.phone}</div>`:''}
+      <div class="student-actions" style="margin-top:10px;">
+        <button class="btn btn-outline btn-sm" onclick="editStudent('${s.id}')">✏️ Sửa</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+function openAddStudent() {
+  editingStudentId = null;
+  document.getElementById('modal-student-title').textContent = 'Thêm học sinh';
+  ['s-name','s-grade','s-subject','s-phone','s-note'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('s-price-private').value = 150000;
+  document.getElementById('s-price-group').value = 80000;
+  selectType('private'); openModal('modal-student');
+}
+function editStudent(id) {
+  const s = db.students.find(x => x.id === id); if (!s) return;
+  editingStudentId = id;
+  document.getElementById('modal-student-title').textContent = 'Sửa học sinh';
+  document.getElementById('s-name').value = s.name;
+  document.getElementById('s-grade').value = s.grade||'';
+  document.getElementById('s-subject').value = s.subject||'';
+  document.getElementById('s-price-private').value = s.pricePrivate||s.price||150000;
+  document.getElementById('s-price-group').value = s.priceGroup||s.price||80000;
+  selectType(s.type||'private');
+  document.getElementById('s-phone').value = s.phone||'';
+  document.getElementById('s-note').value = s.note||'';
+  openModal('modal-student');
+}
+function saveStudent() {
+  const name = document.getElementById('s-name').value.trim();
+  if (!name) return alert('Vui lòng nhập tên học sinh!');
+  const type = currentType;
+  const pricePrivate = parseInt(document.getElementById('s-price-private').value)||0;
+  const priceGroup = parseInt(document.getElementById('s-price-group').value)||0;
+  const price = type==='group'?priceGroup:pricePrivate;
+  const data = { name, grade:document.getElementById('s-grade').value.trim(), subject:document.getElementById('s-subject').value.trim(), type, pricePrivate, priceGroup, price, phone:document.getElementById('s-phone').value.trim(), note:document.getElementById('s-note').value.trim() };
+  if (editingStudentId) { const idx=db.students.findIndex(s=>s.id===editingStudentId); db.students[idx]={...db.students[idx],...data}; }
+  else { db.students.push({ id:Date.now().toString(), ...data }); }
+  save(); closeModal('modal-student'); renderStudents(); renderPhieuStudentSelect();
+}
+function deleteStudent(id) {
+  if (!confirm('Xóa học sinh này?')) return;
+  db.students = db.students.filter(s => s.id !== id);
+  delete db.attendance[id]; save(); renderStudents(); renderHome(); renderPhieuStudentSelect();
+}
+
+// ===== ĐIỂM DANH (GIỮ NGUYÊN) =====
+function renderAttStudents() {
+  const el = document.getElementById('att-student-list');
+  if (!db.students.length) { el.innerHTML = `<div class="empty-state"><p>Thêm học sinh trước</p></div>`; return; }
+  el.innerHTML = db.students.map(s => `<div class="student-card ${selectedStudentId===s.id?'selected':''}" onclick="selectAttStudent('${s.id}')"><div class="student-name">👤 ${s.name}</div></div>`).join('');
+  if (selectedStudentId) renderCalendar();
+}
+function selectAttStudent(id) {
+  selectedStudentId = id;
+  document.getElementById('att-calendar-card').style.display = 'block';
+  const s = db.students.find(x => x.id === id);
+  document.getElementById('att-student-name').textContent = '📅 ' + s.name;
+  renderCalendar(); renderAttStudents(); renderHomeworkStatus();
+}
+function changeMonth(d) {
+  currentMonth += d;
+  if (currentMonth>11){currentMonth=0;currentYear++;}
+  if (currentMonth<0){currentMonth=11;currentYear--;}
+  renderCalendar(); renderHomeworkStatus();
+}
+function renderCalendar() {
+  if (!selectedStudentId) return;
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  if (Array.isArray(db.attendance[selectedStudentId]?.[key])) {
+    const oldArr = db.attendance[selectedStudentId][key];
+    db.attendance[selectedStudentId][key] = {};
+    oldArr.forEach(d => db.attendance[selectedStudentId][key][d] = 'private');
+  }
+  const attendedObj = db.attendance[selectedStudentId]?.[key] || {};
+  document.getElementById('month-label').textContent = `Tháng ${currentMonth+1}/${currentYear}`;
+  let html = ['T2','T3','T4','T5','T6','T7','CN'].map(d=>`<div class="cal-head">${d}</div>`).join('');
+  const first = (new Date(currentYear,currentMonth,1).getDay()+6)%7;
+  const total = new Date(currentYear,currentMonth+1,0).getDate();
+  const today = new Date();
+  let totalSessions = 0;
+  for (let i=0;i<first;i++) html+=`<div class="cal-day empty"></div>`;
+  for (let d=1;d<=total;d++) {
+    const isToday = today.getFullYear()===currentYear&&today.getMonth()===currentMonth&&today.getDate()===d;
+    const val = attendedObj[d]||'';
+    let p=0,g=0;
+    if(val==='private')p=1; else if(val==='group')g=1;
+    else if(val&&typeof val==='string'&&val.startsWith('p:')){const parts=val.split(',');p=parseInt(parts[0].split(':')[1])||0;g=parseInt(parts[1].split(':')[1])||0;}
+    let cls=isToday?'today ':'';
+    let badge='';
+    if(p>0||g>0){totalSessions+=(p+g);if(p>0&&g===0)cls+='att-private';else if(g>0&&p===0)cls+='att-group';else cls+='att-mix';if((p+g)>1)badge=`<span class="multi-badge">${p+g}</span>`;}
+    html+=`<div class="cal-day ${cls}" onclick="toggleDay(${d})" style="position:relative">${d}${badge}</div>`;
+  }
+  document.getElementById('calendar').innerHTML = html;
+  document.getElementById('att-count-label').textContent = `✅ ${totalSessions} buổi học`;
+}
+function toggleDay(day) {
+  if (!selectedStudentId) return;
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  if (!db.attendance[selectedStudentId]) db.attendance[selectedStudentId]={};
+  if (!db.attendance[selectedStudentId][key]) db.attendance[selectedStudentId][key]={};
+  const current = db.attendance[selectedStudentId][key][day]||'';
+  if(current==='') db.attendance[selectedStudentId][key][day]='group';
+  else if(current==='group') db.attendance[selectedStudentId][key][day]='private';
+  else delete db.attendance[selectedStudentId][key][day];
+  save(); renderCalendar();
+}
+function openMultiSessionModal() {
+  if (!selectedStudentId) return alert('Chọn học sinh trước!');
+  const totalDays = new Date(currentYear,currentMonth+1,0).getDate();
+  document.getElementById('ms-day').innerHTML = Array.from({length:totalDays},(_,i)=>`<option value="${i+1}">Ngày ${i+1}</option>`).join('');
+  document.getElementById('ms-p').value=0; document.getElementById('ms-g').value=0;
+  openModal('modal-multi-session');
+}
+function saveMultiSession() {
+  const d = parseInt(document.getElementById('ms-day').value);
+  const p = parseInt(document.getElementById('ms-p').value)||0;
+  const g = parseInt(document.getElementById('ms-g').value)||0;
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  if(!db.attendance[selectedStudentId]) db.attendance[selectedStudentId]={};
+  if(!db.attendance[selectedStudentId][key]) db.attendance[selectedStudentId][key]={};
+  if(p===0&&g===0) delete db.attendance[selectedStudentId][key][d];
+  else if(p===1&&g===0) db.attendance[selectedStudentId][key][d]='private';
+  else if(p===0&&g===1) db.attendance[selectedStudentId][key][d]='group';
+  else db.attendance[selectedStudentId][key][d]=`p:${p},g:${g}`;
+  save(); closeModal('modal-multi-session'); renderCalendar();
+}
+
+// ===== PHIẾU HỌC PHÍ (GIỮ NGUYÊN) =====
+function handleQRUpload(event) {
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const originalDataUrl = e.target.result;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d',{willReadFrequently:true});
+      canvas.width=img.width; canvas.height=img.height;
+      ctx.drawImage(img,0,0,img.width,img.height);
+      const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+      const code = jsQR(imageData.data,imageData.width,imageData.height);
+      if (code) {
+        const loc=code.location;
+        const minX=Math.min(loc.topLeftCorner.x,loc.bottomLeftCorner.x);
+        const minY=Math.min(loc.topLeftCorner.y,loc.topRightCorner.y);
+        const maxX=Math.max(loc.topRightCorner.x,loc.bottomRightCorner.x);
+        const maxY=Math.max(loc.bottomLeftCorner.y,loc.bottomRightCorner.y);
+        const width=maxX-minX; const height=maxY-minY;
+        const padX=width*0.1; const padY=height*0.1;
+        const cropX=Math.max(0,minX-padX); const cropY=Math.max(0,minY-padY);
+        const cropW=Math.min(canvas.width-cropX,width+padX*2);
+        const cropH=Math.min(canvas.height-cropY,height+padY*2);
+        const cropCanvas=document.createElement('canvas');
+        cropCanvas.width=cropW; cropCanvas.height=cropH;
+        const cropCtx=cropCanvas.getContext('2d');
+        cropCtx.fillStyle="#ffffff"; cropCtx.fillRect(0,0,cropW,cropH);
+        cropCtx.drawImage(img,cropX,cropY,cropW,cropH,0,0,cropW,cropH);
+        db.qrCode=cropCanvas.toDataURL('image/png');
+      } else { db.qrCode=originalDataUrl; }
+      save(); renderQRPreview();
+    };
+    img.src=originalDataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+function removeQR() { delete db.qrCode; save(); renderQRPreview(); }
+function renderQRPreview() {
+  const img=document.getElementById('qr-preview-img');
+  const btn=document.getElementById('qr-remove-btn');
+  if(db.qrCode){img.src=db.qrCode;img.style.display='block';btn.style.display='inline-flex';}
+  else{img.src='';img.style.display='none';btn.style.display='none';}
+}
+function renderPhieuStudentSelect() {
+  document.getElementById('phieu-student').innerHTML = '<option value="">-- Chọn học sinh --</option>' + db.students.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+function fillPhieuFromStudent() { calcTotal(); }
+function autoFillAttendance() {
+  const id=document.getElementById('phieu-student').value;
+  const month=document.getElementById('phieu-month').value;
+  if(!id||!month) return;
+  const attObj=db.attendance[id]?.[month]||{};
+  let p=0,g=0;
+  Object.values(attObj).forEach(val=>{
+    if(!val)return;
+    if(val==='private')p++;else if(val==='group')g++;
+    else if(typeof val==='string'&&val.startsWith('p:')){const parts=val.split(',');p+=parseInt(parts[0].split(':')[1])||0;g+=parseInt(parts[1].split(':')[1])||0;}
+  });
+  document.getElementById('phieu-private-sessions').value=p;
+  document.getElementById('phieu-group-sessions').value=g;
+  calcTotal();
+}
+function calcTotal() {
+  const id=document.getElementById('phieu-student').value;
+  const s=db.students.find(x=>x.id===id); if(!s) return;
+  const p=parseInt(document.getElementById('phieu-private-sessions').value)||0;
+  const g=parseInt(document.getElementById('phieu-group-sessions').value)||0;
+  const total=p*(s.pricePrivate||s.price||0)+g*(s.priceGroup||s.price||0);
+  document.getElementById('phieu-total-display').value=fmt(total)+' đ';
+}
+function generatePhieu() {
+  const studentId=document.getElementById('phieu-student').value;
+  if(!studentId) return alert('Vui lòng chọn học sinh!');
+  const month=document.getElementById('phieu-month').value;
+  const s=db.students.find(x=>x.id===studentId);
+  const p=parseInt(document.getElementById('phieu-private-sessions').value)||0;
+  const g=parseInt(document.getElementById('phieu-group-sessions').value)||0;
+  const total=p*(s.pricePrivate||s.price||0)+g*(s.priceGroup||s.price||0);
+  let typeLabels=[]; if(p>0)typeLabels.push(`👤 ${p} Riêng`); if(g>0)typeLabels.push(`👥 ${g} Nhóm`);
+  let dateChips=[];
+  const attObj=db.attendance[studentId]?.[month];
+  if(attObj) dateChips=Object.keys(attObj).map(Number).sort((a,b)=>a-b).map(d=>`${String(d).padStart(2,'0')}/${month.split('-')[1]}`);
+  const html=buildPhieuHTML({studentName:s.name,monthLabel:`Tháng ${parseInt(month.split('-')[1])}`,total,sessions:p+g,dateChips,comment:document.getElementById('phieu-comment').value.trim(),lop:document.getElementById('phieu-lop').value.trim()||'Lớp Học Gia Sư',typeLabel:typeLabels.join(' + ')||'Chưa có',qrCode:db.qrCode});
+  document.getElementById('phieu-display').innerHTML=html;
+  document.getElementById('phieu-preview').style.display='block';
+  document.getElementById('phieu-preview').scrollIntoView({behavior:'smooth'});
+}
+function buildPhieuHTML(d) {
+  return `<div class="phieu-header"><div class="lop">${d.lop}</div><div class="title">PHIẾU HỌC PHÍ</div><div class="thang">${d.monthLabel}</div></div><div class="phieu-body"><div class="phieu-row"><span class="phieu-row-label">🐻 Học sinh</span><span class="phieu-row-value">${d.studentName}</span></div><div class="phieu-row"><span class="phieu-row-label">📚 Hình thức</span><span class="phieu-row-value" style="font-size:0.8rem;">${d.typeLabel}</span></div><div class="phieu-row"><span class="phieu-row-label">📝 Số buổi học</span><span class="phieu-row-value">${d.sessions} buổi</span></div><div class="phieu-total"><div class="phieu-total-label">Tổng học phí</div><div class="phieu-total-value">${fmt(d.total)}đ</div></div>${d.dateChips.length?`<div class="phieu-dates"><div class="phieu-dates-label">Ngày đi học</div><div class="phieu-dates-wrap">${d.dateChips.map(c=>`<span class="phieu-date-chip">${c}</span>`).join('')}</div></div>`:''}${d.comment?`<div style="text-align:center;font-size:.68rem;font-weight:800;color:var(--text-light);margin:10px 0 6px;text-transform:uppercase;">— Nhận xét —</div><div class="phieu-comment">${d.comment}</div>`:''}${d.qrCode?`<div style="text-align:center;margin-top:15px;"><div style="font-size:0.65rem;font-weight:800;color:var(--text-light);text-transform:uppercase;margin-bottom:5px;">Quét để thanh toán</div><img src="${d.qrCode}" style="width:100px;height:100px;border-radius:8px;border:2px solid var(--teal-light);object-fit:cover;"></div>`:''}<div class="phieu-footer">📚 Chúc em học tập tốt!</div></div>`;
+}
+function printPhieuFromModal() { printDoc(document.getElementById('modal-view-phieu-content').innerHTML); }
+function printPhieu() { printDoc(document.getElementById('phieu-display').innerHTML); }
+function printDoc(html) {
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:white;font-family:'Nunito',sans-serif;}.phieu{width:340px;border-radius:20px;overflow:hidden;font-family:'Quicksand',sans-serif;border:1px solid #e2e8f0;}.phieu-header{background:#3bbfad;padding:22px 20px 18px;text-align:center;color:white;}.phieu-header .lop{font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.85;}.phieu-header .title{font-size:2rem;font-weight:800;letter-spacing:1px;margin:2px 0;}.phieu-header .thang{font-size:.9rem;opacity:.9;}.phieu-body{padding:18px 20px;}.phieu-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1.5px dashed #e2e8f0;font-size:.88rem;}.phieu-row-label{color:#718096;font-weight:600;}.phieu-row-value{font-weight:700;color:#2d3748;}.phieu-total{background:#e0f5f3;border:2px solid #3bbfad;border-radius:12px;padding:12px;text-align:center;margin:12px 0;}.phieu-total-label{font-size:.72rem;font-weight:800;letter-spacing:1.5px;color:#2a9d8f;text-transform:uppercase;}.phieu-total-value{font-size:1.7rem;font-weight:900;color:#3bbfad;}.phieu-dates{margin:10px 0;}.phieu-dates-label{font-size:.68rem;font-weight:800;letter-spacing:1.5px;color:#718096;text-align:center;margin-bottom:8px;text-transform:uppercase;}.phieu-dates-wrap{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}.phieu-date-chip{background:#e0f5f3;color:#2a9d8f;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:1.5px solid #b2dfdb;}.phieu-comment{background:#fffbea;border:1.5px solid #ffd166;border-radius:10px;padding:10px 12px;font-size:.82rem;color:#2d3748;text-align:center;margin-top:10px;line-height:1.5;}.phieu-footer{text-align:center;padding:10px;font-size:.78rem;color:#f72585;font-weight:700;}.close-btn{position:fixed;top:16px;right:16px;background:#e53e3e;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;display:flex;align-items:center;justify-content:center;padding:0;}.close-btn:active{background:#c53030;transform:scale(0.95);}@media print{body{background:white;}.close-btn{display:none!important;}}</style></head><body><button class="close-btn" onclick="window.close();window.history.back();">✕</button><div class="phieu">${html}</div></body></html>`);
+  win.document.close();
+  setTimeout(() => { win.print(); }, 600);
+}
+function savePhieu() {
+  const studentId=document.getElementById('phieu-student').value;
+  if(!studentId) return alert('Vui lòng chọn học sinh!');
+  const month=document.getElementById('phieu-month').value;
+  const s=db.students.find(x=>x.id===studentId);
+  const p=parseInt(document.getElementById('phieu-private-sessions').value)||0;
+  const g=parseInt(document.getElementById('phieu-group-sessions').value)||0;
+  const total=p*(s.pricePrivate||s.price||0)+g*(s.priceGroup||s.price||0);
+  let typeLabels=[]; if(p>0)typeLabels.push(`👤 ${p} Riêng`); if(g>0)typeLabels.push(`👥 ${g} Nhóm`);
+  let dateChips=[];
+  const attObj=db.attendance[studentId]?.[month];
+  if(attObj) dateChips=Object.keys(attObj).map(Number).sort((a,b)=>a-b).map(d=>`${String(d).padStart(2,'0')}/${month.split('-')[1]}`);
+  db.phieus=db.phieus||[];
+  db.phieus.unshift({id:Date.now().toString(),studentId,studentName:s.name,month,price:total,sessions:p+g,total,typeLabel:typeLabels.join(' + ')||'Chưa có',dateChips,comment:document.getElementById('phieu-comment').value.trim(),lop:document.getElementById('phieu-lop').value.trim()||'Lớp Học Gia Sư',qrCode:db.qrCode||'',createdAt:new Date().toISOString()});
+  save(); renderPhieuHistory(); populateMonthSelects(); alert('✅ Đã lưu phiếu!');
+}
+function renderPhieuHistory() {
+  const filterMonth=document.getElementById('history-month').value;
+  const el=document.getElementById('phieu-history');
+  const filtered=filterMonth?(db.phieus||[]).filter(p=>p.month===filterMonth):(db.phieus||[]);
+  if(!filtered.length){el.innerHTML=`<div class="empty-state"><p>Không có phiếu nào trong ${formatMonth(filterMonth)}</p></div>`;return;}
+  el.innerHTML=filtered.slice(0,20).map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;">
+      <div style="cursor:pointer;flex:1;min-width:0;" onclick="viewPhieu('${p.id}')">
+        <div style="font-weight:800;font-size:.9rem;color:var(--teal-dark);text-decoration:underline dotted;text-underline-offset:3px;">🧾 ${p.studentName}</div>
+        <div style="font-size:.78rem;color:var(--text-light)">${formatMonth(p.month)} · ${p.sessions} buổi</div>
+      </div>
+      <label style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;">
+        <input type="checkbox" ${p.paid?'checked':''} onchange="togglePaid('${p.id}',this.checked)" style="width:18px;height:18px;accent-color:var(--teal);cursor:pointer;">
+        <span style="font-size:.65rem;font-weight:700;color:${p.paid?'var(--teal)':'#e53e3e'};">${p.paid?'✅ Đã TT':'⏳ Chưa TT'}</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span style="font-weight:800;color:${p.paid?'var(--teal)':'#e53e3e'}">${fmt(p.total)}</span><button class="btn btn-danger btn-sm" onclick="deletePhieu('${p.id}')">🗑️</button></div>
+    </div>`).join('');
+}
+function togglePaid(id,paid) {
+  const p=db.phieus.find(x=>x.id===id); if(!p) return;
+  p.paid=paid; save(); renderPhieuHistory();
+  if(document.getElementById('page-home').classList.contains('active')) renderHome();
+}
+function viewPhieu(id) {
+  const p=db.phieus.find(x=>x.id===id); if(!p) return;
+  document.getElementById('modal-view-phieu-content').innerHTML=buildPhieuHTML({studentName:p.studentName,monthLabel:`Tháng ${parseInt(p.month.split('-')[1])}`,total:p.total,sessions:p.sessions,dateChips:p.dateChips||[],comment:p.comment||'',lop:p.lop||'Lớp Học Gia Sư',typeLabel:p.typeLabel||'',qrCode:p.qrCode||''});
+  openModal('modal-view-phieu');
+}
+function deletePhieu(id) { db.phieus=db.phieus.filter(p=>p.id!==id); save(); renderPhieuHistory(); }
+
+// ===== THỐNG KÊ (GIỮ NGUYÊN) =====
+function renderStats() {
+  const mode=document.getElementById('stats-mode').value;
+  if(mode==='year'){document.getElementById('stats-view-year').style.display='block';document.getElementById('stats-view-month').style.display='none';renderStatsYearly();}
+  else{document.getElementById('stats-view-year').style.display='none';document.getElementById('stats-view-month').style.display='block';renderStatsMonthly();}
+}
+function renderStatsYearly() {
+  const yearSelect=document.getElementById('stats-year');
+  if(!yearSelect.options.length){
+    const years=new Set(); for(let y=currentYear-3;y<=currentYear+4;y++) years.add(y.toString());
+    (db.phieus||[]).forEach(p=>{if(p.month) years.add(p.month.split('-')[0]);});
+    Array.from(years).sort((a,b)=>b-a).forEach(y=>yearSelect.innerHTML+=`<option value="${y}">Năm ${y}</option>`);
+    yearSelect.value=currentYear.toString();
+  }
+  const selectedYear=yearSelect.value;
+  let totalCreated=0,totalReceived=0;
+  let monthlyData=Array(12).fill(0).map(()=>({created:0,received:0}));
+  (db.phieus||[]).filter(p=>p.month&&p.month.startsWith(selectedYear)).forEach(p=>{
+    const amt=p.total||0; totalCreated+=amt; if(p.paid) totalReceived+=amt;
+    const mIndex=parseInt(p.month.split('-')[1])-1;
+    if(mIndex>=0&&mIndex<=11){monthlyData[mIndex].created+=amt;if(p.paid)monthlyData[mIndex].received+=amt;}
+  });
+  document.getElementById('stats-year-grid').innerHTML=`
+    <div class="stat-card" style="border:2px solid var(--teal-light);"><div class="stat-num" style="font-size:1.35rem;">${fmt(totalCreated)}đ</div><div class="stat-label">Tổng học phí</div></div>
+    <div class="stat-card" style="border:2px solid #c6f6d5;background:#f0fff4;"><div class="stat-num" style="font-size:1.35rem;color:#38a169;">${fmt(totalReceived)}đ</div><div class="stat-label" style="color:#2f855a;">Học phí thực nhận</div></div>
+    <div class="stat-card" style="border:2px solid #fed7d7;background:#fff5f5;grid-column:1/-1;"><div class="stat-num-unpaid" style="font-size:1.35rem;">${fmt(totalCreated-totalReceived)}đ</div><div class="stat-label" style="color:#e53e3e;">Học phí chưa thanh toán</div></div>`;
+  let activeMonths=0; monthlyData.forEach(d=>{if(d.created>0)activeMonths++;});
+  document.getElementById('avg-revenue-display').textContent=fmt(activeMonths>0?Math.round(totalCreated/activeMonths):0)+'đ';
+  if(revenueChartInstance) revenueChartInstance.destroy();
+  revenueChartInstance=new Chart(document.getElementById('revenueChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'],datasets:[{label:'Tổng học phí (đ)',data:monthlyData.map(d=>d.created),backgroundColor:'#3bbfad',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}
+  });
+}
+function renderStatsMonthly() {
+  const filterMonth=document.getElementById('stats-month-picker').value;
+  let totalCreated=0,totalReceived=0;
+  const monthPhieus=(db.phieus||[]).filter(p=>p.month===filterMonth);
+  monthPhieus.forEach(p=>{const amt=p.total||0;totalCreated+=amt;if(p.paid)totalReceived+=amt;});
+  document.getElementById('stats-month-grid').innerHTML=`
+    <div class="stat-card" style="border:2px solid var(--teal-light);"><div class="stat-num" style="font-size:1.35rem;">${fmt(totalCreated)}đ</div><div class="stat-label">Tổng học phí</div></div>
+    <div class="stat-card" style="border:2px solid #c6f6d5;background:#f0fff4;"><div class="stat-num" style="font-size:1.35rem;color:#38a169;">${fmt(totalReceived)}đ</div><div class="stat-label" style="color:#2f855a;">Học phí thực nhận</div></div>
+    <div class="stat-card" style="border:2px solid #fed7d7;background:#fff5f5;grid-column:1/-1;"><div class="stat-num-unpaid" style="font-size:1.35rem;">${fmt(totalCreated-totalReceived)}đ</div><div class="stat-label" style="color:#e53e3e;">Học phí chưa thanh toán</div></div>`;
+  document.getElementById('stats-student-list').innerHTML=monthPhieus.length?monthPhieus.map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px dashed var(--border);">
+      <div><div style="font-weight:800;font-size:0.95rem;color:var(--teal-dark);">🎓 ${p.studentName}</div><div style="font-size:0.75rem;color:var(--text-light);margin-top:2px;">${p.sessions} buổi</div></div>
+      <div style="text-align:right;"><div style="font-size:0.95rem;font-weight:800;color:${p.paid?'#38a169':'#e53e3e'};">${fmt(p.total)}đ</div>
+      <span style="display:inline-block;margin-top:4px;font-size:0.65rem;font-weight:800;padding:2px 6px;border-radius:10px;background:${p.paid?'#f0fff4':'#fff5f5'};color:${p.paid?'#2f855a':'#c53030'};border:1px solid ${p.paid?'#c6f6d5':'#fed7d7'};">${p.paid?'Đã Thanh Toán':'Chưa Thanh Toán'}</span>
+      </div>
+    </div>`).join(''):`<div class="empty-state"><p>Chưa có phiếu thu nào trong ${formatMonth(filterMonth)}</p></div>`;
+}
+
+// ===== UTILS (GIỮ NGUYÊN) =====
+function fmt(n) { return Number(n).toLocaleString('vi-VN'); }
+function formatMonth(m) { return m ? `Tháng ${parseInt(m.split('-')[1])}/${m.split('-')[0]}` : ''; }
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); });
+});
+function exportData() {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));
+  a.download=`giasu_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importData(e) {
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try {
+      const d=JSON.parse(ev.target.result);
+      if(confirm('Nhập dữ liệu sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại. Tiếp tục?')){db=d;save();renderHome();alert('✅ Thành công!');}
+    } catch { alert('❌ File không hợp lệ!'); }
+  };
+  r.readAsText(f);
+}
+
+// =============================================================
+// ===== [MỚI] TÍNH NĂNG 1: LỊCH DẠY HÔM NAY =================
+// =============================================================
+function renderTodaySchedule() {
+  const banner = document.getElementById('today-schedule-banner');
+  const sessionsList = document.getElementById('tsb-sessions-list');
+  const dateLabel = document.getElementById('tsb-date-label');
+
+  const today = new Date();
+  const todayDay = today.getDate();
+  const todayMonth = today.getMonth();
+  const todayYear = today.getFullYear();
+  const monthKey = `${todayYear}-${String(todayMonth + 1).padStart(2, '0')}`;
+
+  // Ngày hiển thị
+  const days = ['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+  const months = ['1','2','3','4','5','6','7','8','9','10','11','12'];
+  dateLabel.textContent = `${days[today.getDay()]}, ngày ${todayDay}/${months[todayMonth]}/${todayYear}`;
+
+  // Tìm học sinh có buổi học hôm nay
+  const todaySessions = [];
+  db.students.forEach(s => {
+    const attObj = db.attendance[s.id]?.[monthKey];
+    if (!attObj) return;
+    const val = attObj[todayDay];
+    if (!val) return;
+    let p = 0, g = 0;
+    if (val === 'private') p = 1;
+    else if (val === 'group') g = 1;
+    else if (typeof val === 'string' && val.startsWith('p:')) {
+      const parts = val.split(',');
+      p = parseInt(parts[0].split(':')[1]) || 0;
+      g = parseInt(parts[1].split(':')[1]) || 0;
+    }
+    if (p > 0 || g > 0) {
+      todaySessions.push({ name: s.name, grade: s.grade || '', subject: s.subject || '', p, g });
+    }
+  });
+
+  if (todaySessions.length === 0) {
+    banner.style.display = 'block';
+    sessionsList.innerHTML = `<div class="tsb-empty">Chưa có buổi dạy nào được ghi nhận hôm nay</div>`;
+    return;
+  }
+
+  banner.style.display = 'block';
+  sessionsList.innerHTML = todaySessions.map(s => {
+    const typeIcon = s.p > 0 && s.g > 0 ? '🔀' : s.p > 0 ? '👤' : '👥';
+    const typeText = s.p > 0 && s.g > 0 ? `${s.p} riêng + ${s.g} nhóm` : s.p > 0 ? 'Học riêng' : 'Học nhóm';
+    const sub = s.subject ? ` · ${s.subject}` : '';
+    const grade = s.grade ? ` ${s.grade}` : '';
+    return `<div class="tsb-chip">${typeIcon} <b>${s.name}</b><span style="opacity:0.75;font-size:0.75rem;">${grade}${sub} — ${typeText}</span></div>`;
+  }).join('');
+}
+
+// =============================================================
+// ===== [MỚI] TÍNH NĂNG 2: VÙNG ĐỎ CẢNH BÁO ================
+// =============================================================
+function renderRedZoneAlerts() {
+  const section = document.getElementById('redzone-section');
+  const list = document.getElementById('redzone-list');
+  if (!section || !list) return;
+
+  const selectedMonth = document.getElementById('home-month').value;
+  const [selYear, selMonthNum] = selectedMonth.split('-').map(Number);
+
+  const alerts = [];
+
+  db.students.forEach(s => {
+    const reasons = [];
+    const tags = [];
+
+    // ---- Kiểm tra điểm giảm 2 bài liên tiếp ----
+    const grades = (db.grades?.[s.id] || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (grades.length >= 3) {
+      // Lấy 3 bài gần nhất
+      const last3 = grades.slice(-3);
+      const [g1, g2, g3] = last3;
+      if (g2.score < g1.score && g3.score < g2.score) {
+        reasons.push('Điểm giảm 2 bài liên tiếp');
+        tags.push(`<span class="redzone-tag redzone-tag-score">📉 ${g1.score} → ${g2.score} → ${g3.score}</span>`);
+      }
+    }
+
+    // ---- Kiểm tra nợ bài BTVN ≥ 3 tháng liên tiếp ----
+    let debtCount = 0;
+    // Kiểm tra 6 tháng gần nhất
+    for (let i = 0; i < 6; i++) {
+      let checkMonth = selMonthNum - i;
+      let checkYear = selYear;
+      while (checkMonth <= 0) { checkMonth += 12; checkYear--; }
+      const mKey = `${checkYear}-${String(checkMonth).padStart(2, '0')}`;
+      const hwStatus = db.homework?.[s.id]?.[mKey];
+      if (hwStatus === 'missing' || hwStatus === 'none') {
+        debtCount++;
+      } else {
+        break; // dừng chuỗi
+      }
+    }
+    if (debtCount >= 3) {
+      reasons.push(`Nợ bài ${debtCount} tháng liên tiếp`);
+      tags.push(`<span class="redzone-tag redzone-tag-hw">📚 Nợ ${debtCount} tháng</span>`);
+    }
+
+    if (reasons.length > 0) {
+      alerts.push({ student: s, reasons, tags });
+    }
+  });
+
+  if (alerts.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  list.innerHTML = alerts.map(a => `
+    <div class="redzone-item">
+      <div>
+        <div class="redzone-item-name">👤 ${a.student.name}${a.student.grade ? ` <span style="font-size:0.75rem;color:var(--text-light);font-weight:600;">${a.student.grade}</span>` : ''}</div>
+        <div class="redzone-item-reason">${a.reasons.join(' · ')}</div>
+      </div>
+      <div class="redzone-tags">${a.tags.join('')}</div>
+    </div>`).join('');
+}
+
+// =============================================================
+// ===== [MỚI] TÍNH NĂNG 3: KHO TÀI LIỆU ====================
+// =============================================================
+let currentDocFilter = 'all';
+let editingDocId = null;
+
+const DOC_TYPE_LABELS = {
+  lesson: { label: '📖 Bài học', cls: 'doc-type-lesson', icon: '📖' },
+  exercise: { label: '✏️ Bài tập', cls: 'doc-type-exercise', icon: '✏️' },
+  exam: { label: '📝 Đề thi', cls: 'doc-type-exam', icon: '📝' },
+  reference: { label: '🔖 Tham khảo', cls: 'doc-type-reference', icon: '🔖' },
+};
+
+function setDocFilter(f) {
+  currentDocFilter = f;
+  document.querySelectorAll('.doc-filter-tab').forEach((btn, i) => {
+    const filters = ['all','lesson','exercise','exam','reference'];
+    btn.classList.toggle('active', filters[i] === f);
+  });
+  renderDocs();
+}
+
+function renderDocs() {
+  db.docs = db.docs || [];
+  const q = (document.getElementById('doc-search')?.value || '').toLowerCase();
+  let docs = db.docs;
+  if (currentDocFilter !== 'all') docs = docs.filter(d => d.type === currentDocFilter);
+  if (q) docs = docs.filter(d => d.title.toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q) || (d.desc||'').toLowerCase().includes(q));
+
+  const el = document.getElementById('doc-list');
+  if (!docs.length) {
+    el.innerHTML = `<div class="empty-state">${db.docs.length === 0 ? 'Chưa có tài liệu nào. Nhấn "+ Thêm tài liệu" để bắt đầu!' : 'Không tìm thấy tài liệu phù hợp.'}</div>`;
+    return;
+  }
+
+  el.innerHTML = docs.map(d => {
+    const typeInfo = DOC_TYPE_LABELS[d.type] || DOC_TYPE_LABELS.reference;
+    const shortUrl = d.url ? (d.url.length > 40 ? d.url.substring(0,37)+'...' : d.url) : '';
+    return `
+      <div class="doc-card">
+        <div class="doc-card-actions">
+          <button class="btn btn-outline btn-sm" style="padding:4px 8px;" onclick="editDoc('${d.id}')" title="Sửa">✏️</button>
+          <button class="btn btn-danger btn-sm" style="padding:4px 8px;" onclick="deleteDoc('${d.id}')" title="Xóa">🗑️</button>
+        </div>
+        <span class="doc-type-badge ${typeInfo.cls}">${typeInfo.label}</span>
+        <div class="doc-card-title">${d.title}</div>
+        ${d.subject ? `<div class="doc-card-subject">📚 ${d.subject}</div>` : ''}
+        ${d.desc ? `<div class="doc-card-desc">${d.desc}</div>` : ''}
+        ${d.url ? `
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+            <a href="${d.url}" target="_blank" class="doc-card-link">🔗 ${shortUrl}</a>
+            <button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:0.75rem;" onclick="copyDocLink('${d.id}')">📋 Copy</button>
+          </div>` : '<div style="margin-top:8px;font-size:0.75rem;color:var(--text-light);">Chưa có link</div>'}
+      </div>`;
+  }).join('');
+}
+
+function openAddDoc() {
+  editingDocId = null;
+  document.getElementById('modal-doc-title').textContent = '📁 Thêm tài liệu';
+  ['doc-title-input','doc-subject-input','doc-url-input','doc-desc-input'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('doc-type-input').value = 'lesson';
+  openModal('modal-doc');
+}
+
+function editDoc(id) {
+  const d = (db.docs||[]).find(x => x.id === id); if(!d) return;
+  editingDocId = id;
+  document.getElementById('modal-doc-title').textContent = '✏️ Sửa tài liệu';
+  document.getElementById('doc-title-input').value = d.title || '';
+  document.getElementById('doc-subject-input').value = d.subject || '';
+  document.getElementById('doc-type-input').value = d.type || 'lesson';
+  document.getElementById('doc-url-input').value = d.url || '';
+  document.getElementById('doc-desc-input').value = d.desc || '';
+  openModal('modal-doc');
+}
+
+function saveDoc() {
+  const title = document.getElementById('doc-title-input').value.trim();
+  if (!title) return alert('Vui lòng nhập tiêu đề tài liệu!');
+  const data = {
+    title,
+    subject: document.getElementById('doc-subject-input').value.trim(),
+    type: document.getElementById('doc-type-input').value,
+    url: document.getElementById('doc-url-input').value.trim(),
+    desc: document.getElementById('doc-desc-input').value.trim(),
+  };
+  db.docs = db.docs || [];
+  if (editingDocId) {
+    const idx = db.docs.findIndex(d => d.id === editingDocId);
+    if (idx >= 0) db.docs[idx] = { ...db.docs[idx], ...data };
+  } else {
+    db.docs.unshift({ id: Date.now().toString(), ...data, createdAt: new Date().toISOString() });
+  }
+  save();
+  closeModal('modal-doc');
+  renderDocs();
+}
+
+function deleteDoc(id) {
+  if (!confirm('Xóa tài liệu này?')) return;
+  db.docs = (db.docs||[]).filter(d => d.id !== id);
+  save(); renderDocs();
+}
+
+function copyDocLink(id) {
+  const d = (db.docs||[]).find(x => x.id === id); if(!d||!d.url) return;
+  const toast = document.getElementById('doc-copy-confirm');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(d.url).then(() => { toast.style.display='block'; setTimeout(()=>toast.style.display='none',2500); });
+  } else {
+    const el = document.createElement('input'); el.value = d.url;
+    document.body.appendChild(el); el.select(); document.execCommand('copy');
+    document.body.removeChild(el);
+    toast.style.display='block'; setTimeout(()=>toast.style.display='none',2500);
+  }
+}
+</script>
+</body>
+</html>
