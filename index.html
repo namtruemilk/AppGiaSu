@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Quản lý lớp học Gia sư</title>
+<link rel="icon" href="data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3e%3crect width='100' height='100' rx='20' fill='%233bbfad'/%3e%3ctext x='50' y='75' font-size='75' font-family='Arial, sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3eN%3c/text%3e%3c/svg%3e">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -541,7 +542,6 @@ body.dark .sticky-note {
 </head>
 <body>
 
-<!-- ===== LOGIN SCREEN ===== -->
 <div id="login-screen">
   <div class="login-box">
     <div style="font-size:2rem;font-weight:900;color:var(--teal-dark);">⭐</div>
@@ -554,7 +554,6 @@ body.dark .sticky-note {
   </div>
 </div>
 
-<!-- ===== TOP NAV ===== -->
 <div id="user-bar" style="display:none;background:var(--teal);color:white;padding:6px 20px;display:none!important;align-items:center;justify-content:space-between;font-size:0.8rem;font-weight:700;">
   <span id="user-email"></span>
   <button onclick="logoutUser()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 12px;border-radius:20px;font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;">Đăng xuất</button>
@@ -576,10 +575,8 @@ body.dark .sticky-note {
 
 <div class="main" style="display:none;">
 
-  <!-- ===== TRANG TỔNG QUAN ===== -->
   <div id="page-home" class="page active">
 
-    <!-- [MỚI] LỊCH DẠY HÔM NAY -->
     <div id="today-schedule-banner" class="today-schedule-banner" style="display:none;">
       <div class="tsb-header">
         <div>
@@ -593,7 +590,6 @@ body.dark .sticky-note {
       </div>
     </div>
 
-    <!-- EXAM COUNTDOWN -->
     <div class="exam-countdown-widget">
       <div class="exam-cd-header">
         <div>
@@ -607,7 +603,6 @@ body.dark .sticky-note {
       </div>
     </div>
 
-    <!-- [MỚI] VÙNG ĐỎ -->
     <div id="redzone-section" class="redzone-section" style="display:none;">
       <div class="redzone-header">
         <span class="redzone-pulse"></span>
@@ -627,7 +622,6 @@ body.dark .sticky-note {
       <div class="stats-grid" id="stats-grid"></div>
     </div>
 
-    <!-- HOMEWORK WARNINGS -->
     <div class="card" id="hw-warning-section" style="display:none;background:linear-gradient(135deg,#fff5f5,#fff);border:2px solid #fc8181;">
       <div class="card-header" style="margin-bottom:12px;">
         <div class="card-title" style="color:#c53030;">📝 Cảnh báo: Học sinh nợ bài tập</div>
@@ -654,7 +648,6 @@ body.dark .sticky-note {
     <div class="mobile-footer">powered by namtruemilk</div>
   </div>
 
-  <!-- ===== TRANG HỌC SINH ===== -->
   <div id="page-students" class="page">
     <div class="card">
       <div class="card-header">
@@ -666,7 +659,6 @@ body.dark .sticky-note {
     </div>
   </div>
 
-  <!-- ===== TRANG NHÓM ===== -->
   <div id="page-groups" class="page">
     <div class="card">
       <div class="card-header">
@@ -677,7 +669,6 @@ body.dark .sticky-note {
     </div>
   </div>
 
-  <!-- ===== TRANG ĐIỂM DANH ===== -->
   <div id="page-attendance" class="page">
     <div class="card">
       <div class="card-title" style="margin-bottom:16px;">📅 Chọn học sinh</div>
@@ -705,7 +696,6 @@ body.dark .sticky-note {
             • <span style="display:inline-block;width:12px;height:12px;background:#f3722c;border-radius:3px;vertical-align:middle;"></span> <b>Màu cam:</b> Học riêng<br>
             • <i>Nhấn 1 lần nữa để huỷ</i>
           </div>
-          <!-- HOMEWORK TRACKER -->
           <div class="hw-tracker-section">
             <div class="hw-tracker-title">📝 Bài tập về nhà tháng này</div>
             <div class="hw-btn-group">
@@ -722,7 +712,6 @@ body.dark .sticky-note {
     </div>
   </div>
 
-  <!-- ===== TRANG SỔ ĐIỂM ===== -->
   <div id="page-grades" class="page">
     <div class="card">
       <div class="card-header">
@@ -780,7 +769,6 @@ body.dark .sticky-note {
     </div>
   </div>
 
-  <!-- ===== TRANG HỌC PHÍ ===== -->
   <div id="page-phieu" class="page">
     <div class="card">
       <div class="card-title" style="margin-bottom:18px;">🧾 Tạo phiếu học phí</div>
@@ -849,7 +837,6 @@ body.dark .sticky-note {
     </div>
   </div>
 
-  <!-- ===== TRANG THỐNG KÊ ===== -->
   <div id="page-stats" class="page">
     <div class="card">
       <div class="card-header">
@@ -882,7 +869,6 @@ body.dark .sticky-note {
     </div>
   </div>
 
-  <!-- ===== [MỚI] TRANG TÀI LIỆU ===== -->
   <div id="page-docs" class="page">
     <div class="card">
       <div class="card-header">
@@ -907,14 +893,8 @@ body.dark .sticky-note {
     <div class="mobile-footer">powered by namtruemilk</div>
   </div>
 
-</div><!-- end .main -->
+</div><div class="doc-copy-confirm" id="doc-copy-confirm">✅ Đã sao chép link!</div>
 
-<!-- ===== COPY CONFIRM TOAST ===== -->
-<div class="doc-copy-confirm" id="doc-copy-confirm">✅ Đã sao chép link!</div>
-
-<!-- ===== MODALS ===== -->
-
-<!-- Modal: Thêm học sinh -->
 <div class="modal-overlay" id="modal-student">
   <div class="modal">
     <div class="modal-header">
@@ -965,7 +945,6 @@ body.dark .sticky-note {
   </div>
 </div>
 
-<!-- Modal: Thêm ca học -->
 <div class="modal-overlay" id="modal-multi-session">
   <div class="modal">
     <div class="modal-header">
@@ -993,7 +972,6 @@ body.dark .sticky-note {
   </div>
 </div>
 
-<!-- Modal: Xem phiếu học phí -->
 <div class="modal-overlay" id="modal-view-phieu">
   <div class="modal" style="max-width:380px;">
     <div class="modal-header">
@@ -1007,7 +985,6 @@ body.dark .sticky-note {
   </div>
 </div>
 
-<!-- Modal: Cài đặt ngày thi -->
 <div class="modal-overlay" id="modal-exam-settings">
   <div class="modal">
     <div class="modal-header">
@@ -1036,7 +1013,6 @@ body.dark .sticky-note {
   </div>
 </div>
 
-<!-- Modal: Tin nhắn Zalo -->
 <div class="modal-overlay" id="modal-zalo-message">
   <div class="modal" style="max-width:500px;">
     <div class="modal-header">
@@ -1054,7 +1030,6 @@ body.dark .sticky-note {
   </div>
 </div>
 
-<!-- [MỚI] Modal: Thêm/Sửa tài liệu -->
 <div class="modal-overlay" id="modal-doc">
   <div class="modal">
     <div class="modal-header">
@@ -1104,7 +1079,7 @@ const now = new Date();
 let currentYear = now.getFullYear();
 let currentMonth = now.getMonth();
 let currentUser = null;
-let db = { students: [], attendance: {}, phieus: [], grades: {} };
+let db = { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
 let saveTimeout = null;
 let editingStudentId = null;
 let selectedStudentId = null;
@@ -1148,7 +1123,7 @@ function populateMonthSelects() {
 }
 populateMonthSelects();
 
-// ===== FIREBASE (GIỮ NGUYÊN) =====
+// ===== FIREBASE (GIỮ NGUYÊN + FIX LỖI MẤT DỮ LIỆU) =====
 const firebaseConfig = {
   apiKey: "AIzaSyD_Bf1lv5o4iS0MQO3kByCXWaNOfBESmpc",
   authDomain: "namtruemilk-372004.firebaseapp.com",
@@ -1179,26 +1154,42 @@ function logoutUser() { auth.signOut(); }
 
 async function loadDb() {
   if (!currentUser) return;
+  let localDb = null;
+  try {
+    localDb = JSON.parse(localStorage.getItem('giasu_db_' + currentUser.uid));
+  } catch(e){}
+
   try {
     const doc = await firestore.collection('users').doc(currentUser.uid).get();
     if (doc.exists) {
-      db = doc.data();
+      let fsDb = doc.data();
+      // FIX LỖI MẤT DỮ LIỆU: So sánh thời gian cập nhật để ưu tiên dữ liệu mới hơn
+      if (localDb && localDb.lastUpdated && fsDb.lastUpdated && localDb.lastUpdated > fsDb.lastUpdated) {
+        db = localDb;
+        // Đồng bộ dữ liệu local mới lên lại mây
+        setTimeout(() => firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error), 500);
+      } else {
+        db = fsDb;
+      }
       db.students = db.students || [];
       db.attendance = db.attendance || {};
       db.phieus = db.phieus || [];
       db.grades = db.grades || {};
-    } else db = { students: [], attendance: {}, phieus: [], grades: {} };
+      db.docs = db.docs || [];
+    } else db = localDb || { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
   } catch(e) {
-    db = JSON.parse(localStorage.getItem('giasu_db_' + currentUser.uid) || '{"students":[],"attendance":{},"phieus":[],"grades":{}}');
+    db = localDb || { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
   }
   populateMonthSelects();
 }
 
 function save() {
   if (!currentUser) return;
+  db.lastUpdated = Date.now(); // Lưu vết thời gian để chống mất dữ liệu khi reload nhanh
   localStorage.setItem('giasu_db_' + currentUser.uid, JSON.stringify(db));
   clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(() => firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error), 1000);
+  // Giảm thời gian chờ xuống để lưu nhanh hơn
+  saveTimeout = setTimeout(() => firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error), 500);
 }
 
 function showApp() {
@@ -1215,7 +1206,7 @@ function hideApp() {
   document.getElementById('user-bar').style.display = 'none';
   document.querySelector('.nav').style.display = 'none';
   document.querySelector('.main').style.display = 'none';
-  db = { students: [], attendance: {}, phieus: [], grades: {} };
+  db = { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
 }
 
 auth.onAuthStateChanged(async user => {
@@ -1388,7 +1379,7 @@ function deleteGrade(sid, gid) {
   renderGrades();
 }
 
-// ===== TRANG TỔNG QUAN (GIỮ NGUYÊN + THÊM MỚI) =====
+// ===== TRANG TỔNG QUAN (GIỮ NGUYÊN) =====
 function renderHome() {
   const total = db.students.length;
   let selectedMonth = document.getElementById('home-month').value;
@@ -1426,8 +1417,8 @@ function renderHome() {
     </div>`).join('') : '<div class="empty-state"><p>Chưa có học sinh nào</p></div>';
   renderExamCountdown();
   renderHomeworkWarnings();
-  renderTodaySchedule();   // [MỚI]
-  renderRedZoneAlerts();   // [MỚI]
+  renderTodaySchedule();
+  renderRedZoneAlerts();
 }
 
 // ===== EXAM COUNTDOWN (GIỮ NGUYÊN) =====
@@ -1565,19 +1556,8 @@ function generateZaloMessageContent() {
   else if(hwStatus==='missing') hwText = 'Tuy nhiên bé còn thiếu một số bài tập về nhà, mong anh/chị nhắc nhở thêm ạ. ';
   else if(hwStatus==='none') hwText = 'Lưu ý: Bé chưa hoàn thành bài tập về nhà trong tháng này, rất mong anh/chị phối hợp nhắc nhở ạ. ';
   const comment = document.getElementById('phieu-comment').value.trim();
-  const commentText = comment ? `
-
-💬 Nhận xét của em về bé: "${comment}"` : '';
-  const message = `Dạ em chào anh/chị ạ! 🌟 Em gửi báo cáo học tập tháng ${monthNum}/${yearNum} của bé *${s.name}* ạ.
-
-📚 *Tháng này bé đi học ${sessions} buổi* (${p>0?`${p} buổi riêng`:''}${p>0&&g>0?', ':''}${g>0?`${g} buổi nhóm`:''}).
-
-📊 ${avgText}${hwText}
-
-💰 *Học phí tháng ${monthNum}: ${fmt(total)}đ* ${commentText}
-
-Anh/chị xem lại chi tiết và thanh toán học phí giúp em nhé ạ! 🙏
-Em cảm ơn anh/chị ạ! 😊`;
+  const commentText = comment ? `\n\n💬 Nhận xét của em về bé: "${comment}"` : '';
+  const message = `Dạ em chào anh/chị ạ! 🌟 Em gửi báo cáo học tập tháng ${monthNum}/${yearNum} của bé *${s.name}* ạ.\n\n📚 *Tháng này bé đi học ${sessions} buổi* (${p>0?`${p} buổi riêng`:''}${p>0&&g>0?', ':''}${g>0?`${g} buổi nhóm`:''}).\n\n📊 ${avgText}${hwText}\n\n💰 *Học phí tháng ${monthNum}: ${fmt(total)}đ* ${commentText}\n\nAnh/chị xem lại chi tiết và thanh toán học phí giúp em nhé ạ! 🙏\nEm cảm ơn anh/chị ạ! 😊`;
   document.getElementById('zalo-message-text').value = message;
   document.getElementById('zalo-copy-confirm').style.display = 'none';
 }
@@ -1656,8 +1636,20 @@ function saveStudent() {
 }
 function deleteStudent(id) {
   if (!confirm('Xóa học sinh này?')) return;
+  // FIX: Xác nhận việc có muốn giữ lại lịch sử thông tin học phí hay không
+  const keepData = confirm('Bạn có muốn GIỮ LẠI lịch sử Học phí và Sổ điểm của học sinh này không?\n\n- Chọn [OK]: Giữ lại lịch sử (Khuyên dùng)\n- Chọn [Cancel]: Xóa sạch hoàn toàn');
+  
   db.students = db.students.filter(s => s.id !== id);
-  delete db.attendance[id]; save(); renderStudents(); renderHome(); renderPhieuStudentSelect();
+  delete db.attendance[id]; // Xoá điểm danh
+  
+  if (!keepData) {
+    db.phieus = (db.phieus || []).filter(p => p.studentId !== id);
+    if (db.grades) delete db.grades[id];
+    if (db.homework) delete db.homework[id];
+    if (db.gradeTargets) delete db.gradeTargets[id];
+  }
+  
+  save(); renderStudents(); renderHome(); renderPhieuStudentSelect();
 }
 
 // ===== ĐIỂM DANH (GIỮ NGUYÊN) =====
