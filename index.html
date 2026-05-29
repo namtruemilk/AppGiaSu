@@ -707,6 +707,7 @@ body.dark .sticky-note {
               Đánh giá tình trạng bài tập về nhà của tháng đang xem
             </div>
           </div>
+          <!-- NHẬT KÝ BÀI GIẢNG -->
           <div class="hw-tracker-section" id="journal-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <div class="hw-tracker-title" style="margin-bottom:0;">📖 Nhật ký bài giảng</div>
@@ -1077,6 +1078,7 @@ body.dark .sticky-note {
   </div>
 </div>
 
+<!-- NHẬT KÝ BÀI GIẢNG MODAL -->
 <div class="modal-overlay" id="modal-journal">
   <div class="modal">
     <div class="modal-header">
@@ -1886,7 +1888,7 @@ function saveMultiSession() {
   save(); closeModal('modal-multi-session'); renderCalendar();
 }
 
-// ===== PHIẾU HỌC PHÍ =====
+// ===== PHIẾU HỌC PHÍ (ĐÃ VÁ LỖI MÀU CAM) =====
 function handleQRUpload(event) {
   const file = event.target.files[0]; if(!file) return;
   const reader = new FileReader();
@@ -1958,6 +1960,7 @@ function calcTotal() {
   const total=p*(s.pricePrivate||s.price||0)+g*(s.priceGroup||s.price||0);
   document.getElementById('phieu-total-display').value=fmt(total)+' đ';
 }
+
 function generatePhieu() {
   const studentId=document.getElementById('phieu-student').value;
   if(!studentId) return alert('Vui lòng chọn học sinh!');
@@ -1970,27 +1973,53 @@ function generatePhieu() {
   let dateChips=[];
   const attObj=db.attendance[studentId]?.[month];
   if(attObj) dateChips=Object.keys(attObj).map(Number).sort((a,b)=>a-b).map(d=>`${String(d).padStart(2,'0')}/${month.split('-')[1]}`);
-  const html=buildPhieuHTML({studentName:s.name,monthLabel:`Tháng ${parseInt(month.split('-')[1])}`,total,sessions:p+g,dateChips,comment:document.getElementById('phieu-comment').value.trim(),lop:document.getElementById('phieu-lop').value.trim()||'Lớp Học Gia Sư',typeLabel:typeLabels.join(' + ')||'Chưa có',qrCode:db.qrCode});
+  
+  // Xác định cờ isPrivate: Nếu có buổi riêng và không có buổi nhóm -> True. Nếu chưa có buổi nào -> Xét theo mặc định hồ sơ học sinh
+  let isPriv = s ? s.type === 'private' : false;
+  if (p > 0 && g === 0) isPriv = true;
+  if (g > 0 && p === 0) isPriv = false;
+
+  const html=buildPhieuHTML({
+    studentName:s.name,
+    monthLabel:`Tháng ${parseInt(month.split('-')[1])}`,
+    total,
+    sessions:p+g,
+    dateChips,
+    comment:document.getElementById('phieu-comment').value.trim(),
+    lop:document.getElementById('phieu-lop').value.trim()||'Lớp Học Gia Sư',
+    typeLabel:typeLabels.join(' + ')||'Chưa có',
+    qrCode:db.qrCode,
+    isPrivate: isPriv
+  });
   document.getElementById('phieu-display').innerHTML=html;
   document.getElementById('phieu-preview').style.display='block';
   document.getElementById('phieu-preview').scrollIntoView({behavior:'smooth'});
 }
+
 function buildPhieuHTML(d) {
-  let isPrivateOnly = d.typeLabel && d.typeLabel.includes('Riêng') && !d.typeLabel.includes('Nhóm');
-  let tColor = isPrivateOnly ? '#f3722c' : '#3bbfad';
-  let lColor = isPrivateOnly ? '#fff0eb' : '#e0f5f3';
-  let dColor = isPrivateOnly ? '#d35400' : '#2a9d8f';
+  let isPriv = d.isPrivate;
+  // Dự phòng cho dữ liệu cũ (nếu không có isPrivate thì kiểm tra chuỗi chữ)
+  if (isPriv === undefined) {
+      isPriv = d.typeLabel && d.typeLabel.includes('Riêng') && !d.typeLabel.includes('Nhóm');
+  }
+
+  let tColor = isPriv ? '#f3722c' : '#3bbfad';
+  let lColor = isPriv ? '#fff0eb' : '#e0f5f3';
+  let dColor = isPriv ? '#d35400' : '#2a9d8f';
 
   return `<div class="phieu-header" style="background:${tColor};"><div class="lop">${d.lop}</div><div class="title">PHIẾU HỌC PHÍ</div><div class="thang">${d.monthLabel}</div></div><div class="phieu-body"><div class="phieu-row"><span class="phieu-row-label">🐻 Học sinh</span><span class="phieu-row-value">${d.studentName}</span></div><div class="phieu-row"><span class="phieu-row-label">📚 Hình thức</span><span class="phieu-row-value" style="font-size:0.8rem;">${d.typeLabel}</span></div><div class="phieu-row"><span class="phieu-row-label">📝 Số buổi học</span><span class="phieu-row-value">${d.sessions} buổi</span></div><div class="phieu-total" style="background:${lColor};border-color:${tColor};"><div class="phieu-total-label" style="color:${dColor};">Tổng học phí</div><div class="phieu-total-value" style="color:${tColor};">${fmt(d.total)}đ</div></div>${d.dateChips.length?`<div class="phieu-dates"><div class="phieu-dates-label">Ngày đi học</div><div class="phieu-dates-wrap">${d.dateChips.map(c=>`<span class="phieu-date-chip" style="background:${lColor};color:${dColor};border-color:${lColor};">${c}</span>`).join('')}</div></div>`:''}${d.comment?`<div style="text-align:center;font-size:.68rem;font-weight:800;color:var(--text-light);margin:10px 0 6px;text-transform:uppercase;">— Nhận xét —</div><div class="phieu-comment">${d.comment}</div>`:''}${d.qrCode?`<div style="text-align:center;margin-top:15px;"><div style="font-size:0.65rem;font-weight:800;color:var(--text-light);text-transform:uppercase;margin-bottom:5px;">Quét để thanh toán</div><img src="${d.qrCode}" style="width:100px;height:100px;border-radius:8px;border:2px solid ${lColor};object-fit:cover;"></div>`:''}<div class="phieu-footer" style="color:${tColor};">📚 Chúc em học tập tốt!</div></div>`;
 }
+
 function printPhieuFromModal() { printDoc(document.getElementById('modal-view-phieu-content').innerHTML); }
 function printPhieu() { printDoc(document.getElementById('phieu-display').innerHTML); }
 function printDoc(html) {
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:white;font-family:'Nunito',sans-serif;}.phieu{width:340px;border-radius:20px;overflow:hidden;font-family:'Quicksand',sans-serif;border:1px solid #e2e8f0;}.phieu-header{background:#3bbfad;padding:22px 20px 18px;text-align:center;color:white;}.phieu-header .lop{font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.85;}.phieu-header .title{font-size:2rem;font-weight:800;letter-spacing:1px;margin:2px 0;}.phieu-header .thang{font-size:.9rem;opacity:.9;}.phieu-body{padding:18px 20px;}.phieu-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1.5px dashed #e2e8f0;font-size:.88rem;}.phieu-row-label{color:#718096;font-weight:600;}.phieu-row-value{font-weight:700;color:#2d3748;}.phieu-total{background:#e0f5f3;border:2px solid #3bbfad;border-radius:12px;padding:12px;text-align:center;margin:12px 0;}.phieu-total-label{font-size:.72rem;font-weight:800;letter-spacing:1.5px;color:#2a9d8f;text-transform:uppercase;}.phieu-total-value{font-size:1.7rem;font-weight:900;color:#3bbfad;}.phieu-dates{margin:10px 0;}.phieu-dates-label{font-size:.68rem;font-weight:800;letter-spacing:1.5px;color:#718096;text-align:center;margin-bottom:8px;text-transform:uppercase;}.phieu-dates-wrap{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}.phieu-date-chip{background:#e0f5f3;color:#2a9d8f;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:1.5px solid #b2dfdb;}.phieu-comment{background:#fffbea;border:1.5px solid #ffd166;border-radius:10px;padding:10px 12px;font-size:.82rem;color:#2d3748;text-align:center;margin-top:10px;line-height:1.5;}.phieu-footer{text-align:center;padding:10px;font-size:.78rem;color:#f72585;font-weight:700;}.close-btn{position:fixed;top:16px;right:16px;background:#e53e3e;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;display:flex;align-items:center;justify-content:center;padding:0;}.close-btn:active{background:#c53030;transform:scale(0.95);}@media print{body{background:white;}.close-btn{display:none!important;}}</style></head><body><button class="close-btn" onclick="window.close();window.history.back();">✕</button><div class="phieu">${html}</div></body></html>`);
+  // Ép trình duyệt phải giữ màu nền (background-color) khi lưu PDF/In bằng print-color-adjust
+  win.document.write(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet"><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:white;font-family:'Nunito',sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important;} .phieu{width:340px;border-radius:20px;overflow:hidden;font-family:'Quicksand',sans-serif;border:1px solid #e2e8f0;}.phieu-header{background:#3bbfad;padding:22px 20px 18px;text-align:center;color:white;}.phieu-header .lop{font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.85;}.phieu-header .title{font-size:2rem;font-weight:800;letter-spacing:1px;margin:2px 0;}.phieu-header .thang{font-size:.9rem;opacity:.9;}.phieu-body{padding:18px 20px;}.phieu-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1.5px dashed #e2e8f0;font-size:.88rem;}.phieu-row-label{color:#718096;font-weight:600;}.phieu-row-value{font-weight:700;color:#2d3748;}.phieu-total{background:#e0f5f3;border:2px solid #3bbfad;border-radius:12px;padding:12px;text-align:center;margin:12px 0;}.phieu-total-label{font-size:.72rem;font-weight:800;letter-spacing:1.5px;color:#2a9d8f;text-transform:uppercase;}.phieu-total-value{font-size:1.7rem;font-weight:900;color:#3bbfad;}.phieu-dates{margin:10px 0;}.phieu-dates-label{font-size:.68rem;font-weight:800;letter-spacing:1.5px;color:#718096;text-align:center;margin-bottom:8px;text-transform:uppercase;}.phieu-dates-wrap{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;}.phieu-date-chip{background:#e0f5f3;color:#2a9d8f;font-size:.72rem;font-weight:700;padding:3px 8px;border-radius:20px;border:1.5px solid #b2dfdb;}.phieu-comment{background:#fffbea;border:1.5px solid #ffd166;border-radius:10px;padding:10px 12px;font-size:.82rem;color:#2d3748;text-align:center;margin-top:10px;line-height:1.5;}.phieu-footer{text-align:center;padding:10px;font-size:.78rem;color:#f72585;font-weight:700;}.close-btn{position:fixed;top:16px;right:16px;background:#e53e3e;color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;display:flex;align-items:center;justify-content:center;padding:0;}.close-btn:active{background:#c53030;transform:scale(0.95);} @media print{body{background:white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important;}.close-btn{display:none!important;}}</style></head><body><button class="close-btn" onclick="window.close();window.history.back();">✕</button><div class="phieu">${html}</div></body></html>`);
   win.document.close();
   setTimeout(() => { win.print(); }, 600);
 }
+
 function savePhieu() {
   const studentId=document.getElementById('phieu-student').value;
   if(!studentId) return alert('Vui lòng chọn học sinh!');
@@ -2003,36 +2032,79 @@ function savePhieu() {
   let dateChips=[];
   const attObj=db.attendance[studentId]?.[month];
   if(attObj) dateChips=Object.keys(attObj).map(Number).sort((a,b)=>a-b).map(d=>`${String(d).padStart(2,'0')}/${month.split('-')[1]}`);
+  
+  let isPriv = s ? s.type === 'private' : false;
+  if (p > 0 && g === 0) isPriv = true;
+  if (g > 0 && p === 0) isPriv = false;
+
   db.phieus=db.phieus||[];
-  db.phieus.unshift({id:Date.now().toString(),studentId,studentName:s.name,month,price:total,sessions:p+g,total,typeLabel:typeLabels.join(' + ')||'Chưa có',dateChips,comment:document.getElementById('phieu-comment').value.trim(),lop:document.getElementById('phieu-lop').value.trim()||'Lớp Học Gia Sư',qrCode:db.qrCode||'',createdAt:new Date().toISOString()});
+  db.phieus.unshift({
+    id:Date.now().toString(),
+    studentId,
+    studentName:s.name,
+    month,
+    price:total,
+    sessions:p+g,
+    total,
+    typeLabel:typeLabels.join(' + ')||'Chưa có',
+    dateChips,
+    comment:document.getElementById('phieu-comment').value.trim(),
+    lop:document.getElementById('phieu-lop').value.trim()||'Lớp Học Gia Sư',
+    qrCode:db.qrCode||'',
+    isPrivate: isPriv,
+    createdAt:new Date().toISOString()
+  });
   save(); renderPhieuHistory(); populateMonthSelects(); alert('✅ Đã lưu phiếu!');
 }
+
 function renderPhieuHistory() {
   const filterMonth=document.getElementById('history-month').value;
   const el=document.getElementById('phieu-history');
   const filtered=filterMonth?(db.phieus||[]).filter(p=>p.month===filterMonth):(db.phieus||[]);
   if(!filtered.length){el.innerHTML=`<div class="empty-state"><p>Không có phiếu nào trong ${formatMonth(filterMonth)}</p></div>`;return;}
-  el.innerHTML=filtered.slice(0,20).map(p=>`
+  
+  el.innerHTML=filtered.slice(0,20).map(p=> {
+    let isPriv = p.isPrivate;
+    if (isPriv === undefined) {
+        isPriv = p.typeLabel && p.typeLabel.includes('Riêng') && !p.typeLabel.includes('Nhóm');
+    }
+    let tColor = isPriv ? '#f3722c' : 'var(--teal-dark)';
+    
+    return `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;">
       <div style="cursor:pointer;flex:1;min-width:0;" onclick="viewPhieu('${p.id}')">
-        <div style="font-weight:800;font-size:.9rem;color:var(--teal-dark);text-decoration:underline dotted;text-underline-offset:3px;">🧾 ${p.studentName}</div>
+        <div style="font-weight:800;font-size:.9rem;color:${tColor};text-decoration:underline dotted;text-underline-offset:3px;">🧾 ${p.studentName}</div>
         <div style="font-size:.78rem;color:var(--text-light)">${formatMonth(p.month)} · ${p.sessions} buổi</div>
       </div>
       <label style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex-shrink:0;">
-        <input type="checkbox" ${p.paid?'checked':''} onchange="togglePaid('${p.id}',this.checked)" style="width:18px;height:18px;accent-color:var(--teal);cursor:pointer;">
-        <span style="font-size:.65rem;font-weight:700;color:${p.paid?'var(--teal)':'#e53e3e'};">${p.paid?'✅ Đã TT':'⏳ Chưa TT'}</span>
+        <input type="checkbox" ${p.paid?'checked':''} onchange="togglePaid('${p.id}',this.checked)" style="width:18px;height:18px;accent-color:${isPriv ? '#f3722c' : 'var(--teal)'};cursor:pointer;">
+        <span style="font-size:.65rem;font-weight:700;color:${p.paid?(isPriv ? '#d35400' : 'var(--teal)'):'#e53e3e'};">${p.paid?'✅ Đã TT':'⏳ Chưa TT'}</span>
       </label>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span style="font-weight:800;color:${p.paid?'var(--teal)':'#e53e3e'}">${fmt(p.total)}</span><button class="btn btn-danger btn-sm" onclick="deletePhieu('${p.id}')">🗑️</button></div>
-    </div>`).join('');
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;"><span style="font-weight:800;color:${p.paid?(isPriv ? '#d35400' : 'var(--teal)'):'#e53e3e'}">${fmt(p.total)}</span><button class="btn btn-danger btn-sm" onclick="deletePhieu('${p.id}')">🗑️</button></div>
+    </div>`;
+  }).join('');
 }
+
 function togglePaid(id,paid) {
   const p=db.phieus.find(x=>x.id===id); if(!p) return;
   p.paid=paid; save(); renderPhieuHistory();
   if(document.getElementById('page-home').classList.contains('active')) renderHome();
 }
+
 function viewPhieu(id) {
   const p=db.phieus.find(x=>x.id===id); if(!p) return;
-  document.getElementById('modal-view-phieu-content').innerHTML=buildPhieuHTML({studentName:p.studentName,monthLabel:`Tháng ${parseInt(p.month.split('-')[1])}`,total:p.total,sessions:p.sessions,dateChips:p.dateChips||[],comment:p.comment||'',lop:p.lop||'Lớp Học Gia Sư',typeLabel:p.typeLabel||'',qrCode:p.qrCode||''});
+  document.getElementById('modal-view-phieu-content').innerHTML=buildPhieuHTML({
+    studentName:p.studentName,
+    monthLabel:`Tháng ${parseInt(p.month.split('-')[1])}`,
+    total:p.total,
+    sessions:p.sessions,
+    dateChips:p.dateChips||[],
+    comment:p.comment||'',
+    lop:p.lop||'Lớp Học Gia Sư',
+    typeLabel:p.typeLabel||'',
+    qrCode:p.qrCode||'',
+    isPrivate: p.isPrivate
+  });
   openModal('modal-view-phieu');
 }
 function deletePhieu(id) { db.phieus=db.phieus.filter(p=>p.id!==id); save(); renderPhieuHistory(); }
