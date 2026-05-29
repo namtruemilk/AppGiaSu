@@ -707,6 +707,13 @@ body.dark .sticky-note {
               Đánh giá tình trạng bài tập về nhà của tháng đang xem
             </div>
           </div>
+          <div class="hw-tracker-section" id="journal-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div class="hw-tracker-title" style="margin-bottom:0;">📖 Nhật ký bài giảng</div>
+              <button class="btn btn-primary btn-sm" onclick="openJournalModal()">+ Thêm</button>
+            </div>
+            <div id="journal-list"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1070,8 +1077,35 @@ body.dark .sticky-note {
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-journal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-journal-title">Thêm Nhật ký bài giảng</div>
+      <button class="modal-close" onclick="closeModal('modal-journal')">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Ngày dạy</label>
+        <input type="text" id="j-date" placeholder="dd/mm/yyyy">
+      </div>
+      <div class="form-group full">
+        <label>Nội dung bài học *</label>
+        <textarea id="j-content" placeholder="Hôm nay học phần tĩnh điện học, làm bài tập 1 đến 5..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Link tài liệu/Bảng vẽ (Tùy chọn)</label>
+        <input type="url" id="j-link" placeholder="https://...">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="closeModal('modal-journal')">Hủy</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveJournal()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ===== BIẾN TOÀN CỤC (GIỮ NGUYÊN) =====
+// ===== BIẾN TOÀN CỤC =====
 let revenueChartInstance = null;
 let gradeChartInstance = null;
 let currentGradeSubject = 'Tất cả';
@@ -1079,12 +1113,13 @@ const now = new Date();
 let currentYear = now.getFullYear();
 let currentMonth = now.getMonth();
 let currentUser = null;
-let db = { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
+let db = { students: [], attendance: {}, phieus: [], grades: {}, docs: [], journals: {} };
 let saveTimeout = null;
 let editingStudentId = null;
 let selectedStudentId = null;
+let editingJournalId = null;
 
-// ===== DARK MODE (GIỮ NGUYÊN) =====
+// ===== DARK MODE =====
 function toggleTheme() {
   document.body.classList.toggle('dark');
   const isDark = document.body.classList.contains('dark');
@@ -1123,7 +1158,7 @@ function populateMonthSelects() {
 }
 populateMonthSelects();
 
-// ===== FIREBASE (GIỮ NGUYÊN + FIX LỖI MẤT DỮ LIỆU) =====
+// ===== FIREBASE & REAL-TIME SYNC =====
 const firebaseConfig = {
   apiKey: "AIzaSyD_Bf1lv5o4iS0MQO3kByCXWaNOfBESmpc",
   authDomain: "namtruemilk-372004.firebaseapp.com",
@@ -1152,44 +1187,53 @@ function loginGoogle() {
 }
 function logoutUser() { auth.signOut(); }
 
-async function loadDb() {
+let unsubscribeSync = null;
+
+function startRealtimeSync() {
   if (!currentUser) return;
-  let localDb = null;
+  
+  // 1. Tải LocalDb trước để UI không bị giật lag
   try {
-    localDb = JSON.parse(localStorage.getItem('giasu_db_' + currentUser.uid));
+    let localDb = JSON.parse(localStorage.getItem('giasu_db_' + currentUser.uid));
+    if(localDb) db = localDb;
   } catch(e){}
 
-  try {
-    const doc = await firestore.collection('users').doc(currentUser.uid).get();
-    if (doc.exists) {
-      let fsDb = doc.data();
-      // FIX LỖI MẤT DỮ LIỆU: So sánh thời gian cập nhật để ưu tiên dữ liệu mới hơn
-      if (localDb && localDb.lastUpdated && fsDb.lastUpdated && localDb.lastUpdated > fsDb.lastUpdated) {
-        db = localDb;
-        // Đồng bộ dữ liệu local mới lên lại mây
-        setTimeout(() => firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error), 500);
-      } else {
-        db = fsDb;
+  // 2. Kích hoạt Realtime Sync trên Firestore
+  if (unsubscribeSync) unsubscribeSync();
+  unsubscribeSync = firestore.collection('users').doc(currentUser.uid)
+    .onSnapshot((doc) => {
+      if (doc.exists) {
+        let fsDb = doc.data();
+        // Cập nhật nếu mây có dữ liệu MỚI HƠN local
+        if (!db.lastUpdated || (fsDb.lastUpdated && fsDb.lastUpdated > db.lastUpdated)) {
+          db = fsDb;
+          db.students = db.students || [];
+          db.attendance = db.attendance || {};
+          db.phieus = db.phieus || [];
+          db.grades = db.grades || {};
+          db.docs = db.docs || [];
+          db.journals = db.journals || {}; // Thêm phần cho Nhật ký
+          localStorage.setItem('giasu_db_' + currentUser.uid, JSON.stringify(db));
+          
+          // Re-render màn hình đang mở
+          const activePage = document.querySelector('.page.active');
+          if (activePage) showPage(activePage.id);
+        }
       }
-      db.students = db.students || [];
-      db.attendance = db.attendance || {};
-      db.phieus = db.phieus || [];
-      db.grades = db.grades || {};
-      db.docs = db.docs || [];
-    } else db = localDb || { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
-  } catch(e) {
-    db = localDb || { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
-  }
-  populateMonthSelects();
+      showApp();
+    }, (error) => {
+      console.error("Lỗi đồng bộ Realtime:", error);
+      showApp(); // Lỗi mạng vẫn cho mở web dùng offline
+    });
 }
 
 function save() {
   if (!currentUser) return;
-  db.lastUpdated = Date.now(); // Lưu vết thời gian để chống mất dữ liệu khi reload nhanh
+  db.lastUpdated = Date.now();
   localStorage.setItem('giasu_db_' + currentUser.uid, JSON.stringify(db));
-  clearTimeout(saveTimeout);
-  // Giảm thời gian chờ xuống để lưu nhanh hơn
-  saveTimeout = setTimeout(() => firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error), 500);
+  
+  // Đẩy thẳng lên Firebase không cần setTimeout để đồng bộ Realtime tức thì
+  firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error);
 }
 
 function showApp() {
@@ -1206,16 +1250,16 @@ function hideApp() {
   document.getElementById('user-bar').style.display = 'none';
   document.querySelector('.nav').style.display = 'none';
   document.querySelector('.main').style.display = 'none';
-  db = { students: [], attendance: {}, phieus: [], grades: {}, docs: [] };
+  db = { students: [], attendance: {}, phieus: [], grades: {}, docs: [], journals: {} };
 }
 
-auth.onAuthStateChanged(async user => {
+auth.onAuthStateChanged(user => {
   if (user) {
     currentUser = user;
-    await loadDb();
-    showApp();
+    startRealtimeSync();
   } else {
     currentUser = null;
+    if (unsubscribeSync) unsubscribeSync();
     hideApp();
   }
 });
@@ -1229,14 +1273,14 @@ function showPage(id) {
   if (id === 'page-home') renderHome();
   if (id === 'page-students') renderStudents();
   if (id === 'page-groups') renderGroups();
-  if (id === 'page-attendance') renderAttStudents();
+  if (id === 'page-attendance') renderAttStudents(); // Hàm này sẽ gọi tiếp renderCalendar và renderJournals
   if (id === 'page-grades') { currentGradeSubject = 'Tất cả'; renderGradeStudentSelect(); }
   if (id === 'page-phieu') { renderPhieuStudentSelect(); renderPhieuHistory(); renderQRPreview(); }
   if (id === 'page-stats') renderStats();
   if (id === 'page-docs') renderDocs();
 }
 
-// ===== GROUPS PAGE (GIỮ NGUYÊN) =====
+// ===== GROUPS PAGE =====
 function renderGroups() {
   const groups = {};
   db.students.forEach(s => {
@@ -1279,7 +1323,7 @@ function bulkAttend(gIndex, gradeName) {
   alert('✅ Đã điểm danh thành công!');
 }
 
-// ===== GRADES PAGE (GIỮ NGUYÊN) =====
+// ===== GRADES PAGE =====
 function renderGradeStudentSelect() {
   document.getElementById('grade-student').innerHTML = '<option value="">-- Chọn học sinh --</option>' + db.students.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
   document.getElementById('grade-content').style.display = 'none';
@@ -1379,7 +1423,7 @@ function deleteGrade(sid, gid) {
   renderGrades();
 }
 
-// ===== TRANG TỔNG QUAN (GIỮ NGUYÊN) =====
+// ===== TRANG TỔNG QUAN =====
 function renderHome() {
   const total = db.students.length;
   let selectedMonth = document.getElementById('home-month').value;
@@ -1421,7 +1465,7 @@ function renderHome() {
   renderRedZoneAlerts();
 }
 
-// ===== EXAM COUNTDOWN (GIỮ NGUYÊN) =====
+// ===== EXAM COUNTDOWN =====
 function renderExamCountdown() {
   const examSettings = db.examSettings || {};
   const contentEl = document.getElementById('exam-countdown-content');
@@ -1477,7 +1521,7 @@ function openExamModal() {
   openModal('modal-exam-settings');
 }
 
-// ===== HOMEWORK TRACKER (GIỮ NGUYÊN) =====
+// ===== HOMEWORK TRACKER =====
 function setHomework(status) {
   if(!selectedStudentId) return;
   const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
@@ -1520,7 +1564,112 @@ function renderHomeworkWarnings() {
     </div>`).join('');
 }
 
-// ===== ZALO AUTO-MESSAGE (GIỮ NGUYÊN) =====
+// ===== NHẬT KÝ BÀI GIẢNG =====
+function renderJournals() {
+  if(!selectedStudentId) return;
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  const listEl = document.getElementById('journal-list');
+  
+  db.journals = db.journals || {};
+  db.journals[selectedStudentId] = db.journals[selectedStudentId] || {};
+  const monthJournals = db.journals[selectedStudentId][key] || [];
+  
+  // Sắp xếp ngày mới nhất lên đầu
+  monthJournals.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  if (!monthJournals.length) {
+    listEl.innerHTML = `<div style="font-size:0.8rem; color:var(--text-light); text-align:center; padding:10px 0;">Chưa có nhật ký nào trong tháng này.</div>`;
+    return;
+  }
+  
+  listEl.innerHTML = monthJournals.map(j => `
+    <div style="background:var(--white); border:2px solid var(--border); border-radius:12px; padding:12px; margin-bottom:10px; position:relative;">
+      <div style="font-size:0.75rem; font-weight:800; color:var(--teal); margin-bottom:6px;">📅 ${j.date.split('-').reverse().join('/')}</div>
+      <div style="font-size:0.85rem; color:var(--text); white-space:pre-wrap; line-height:1.5;">${j.content}</div>
+      ${j.link ? `<a href="${j.link}" target="_blank" style="display:inline-block; margin-top:8px; font-size:0.75rem; color:var(--white); background:var(--teal-dark); padding:3px 10px; border-radius:20px; font-weight:700; text-decoration:none;">🔗 Xem tài liệu đính kèm</a>` : ''}
+      <div style="position:absolute; top:10px; right:10px; display:flex; gap:6px;">
+        <button class="btn btn-outline btn-sm" style="padding:4px 8px;" onclick="editJournal('${j.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" style="padding:4px 8px;" onclick="deleteJournal('${j.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openJournalModal() {
+  editingJournalId = null;
+  document.getElementById('modal-journal-title').textContent = 'Thêm Nhật ký bài giảng';
+  document.getElementById('j-content').value = '';
+  document.getElementById('j-link').value = '';
+  
+  if (!window.journalDatePicker) {
+    window.journalDatePicker = flatpickr("#j-date", { dateFormat:"Y-m-d", altInput:true, altFormat:"d/m/Y", locale:"vn", disableMobile:true, defaultDate:new Date() });
+  } else {
+    window.journalDatePicker.setDate(new Date());
+  }
+  openModal('modal-journal');
+}
+
+function editJournal(id) {
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  const monthJournals = db.journals[selectedStudentId]?.[key] || [];
+  const j = monthJournals.find(x => x.id === id);
+  if(!j) return;
+  
+  editingJournalId = id;
+  document.getElementById('modal-journal-title').textContent = 'Sửa Nhật ký bài giảng';
+  document.getElementById('j-content').value = j.content || '';
+  document.getElementById('j-link').value = j.link || '';
+  
+  if (!window.journalDatePicker) {
+    window.journalDatePicker = flatpickr("#j-date", { dateFormat:"Y-m-d", altInput:true, altFormat:"d/m/Y", locale:"vn", disableMobile:true });
+  }
+  window.journalDatePicker.setDate(j.date);
+  
+  openModal('modal-journal');
+}
+
+function saveJournal() {
+  const date = document.getElementById('j-date').value;
+  const content = document.getElementById('j-content').value.trim();
+  const link = document.getElementById('j-link').value.trim();
+  
+  if(!date || !content) return alert('Vui lòng nhập ngày và nội dung!');
+  
+  const dateObj = new Date(date);
+  const jYear = dateObj.getFullYear();
+  const jMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const key = `${jYear}-${jMonth}`;
+  
+  db.journals = db.journals || {};
+  db.journals[selectedStudentId] = db.journals[selectedStudentId] || {};
+  db.journals[selectedStudentId][key] = db.journals[selectedStudentId][key] || [];
+  
+  if (editingJournalId) {
+    // Xoá ở tháng cũ đề phòng user đổi ngày sang tháng khác
+    for (let mKey in db.journals[selectedStudentId]) {
+       db.journals[selectedStudentId][mKey] = db.journals[selectedStudentId][mKey].filter(x => x.id !== editingJournalId);
+    }
+    // Cập nhật lại
+    db.journals[selectedStudentId][key].push({ id: editingJournalId, date, content, link });
+  } else {
+    // Thêm mới
+    db.journals[selectedStudentId][key].push({ id: Date.now().toString(), date, content, link });
+  }
+  
+  save();
+  closeModal('modal-journal');
+  renderJournals(); 
+}
+
+function deleteJournal(id) {
+  if(!confirm('Xóa nhật ký này?')) return;
+  const key = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+  db.journals[selectedStudentId][key] = db.journals[selectedStudentId][key].filter(x => x.id !== id);
+  save();
+  renderJournals();
+}
+
+// ===== ZALO AUTO-MESSAGE =====
 let zaloCurrentStudentId = null;
 function openZaloMessage() {
   const studentId = document.getElementById('phieu-student').value;
@@ -1573,7 +1722,7 @@ function openZaloApp() {
   window.open(`https://zalo.me/`, '_blank');
 }
 
-// ===== TRANG HỌC SINH (GIỮ NGUYÊN) =====
+// ===== TRANG HỌC SINH =====
 let currentType = 'private';
 function selectType(type) {
   currentType = type;
@@ -1636,41 +1785,44 @@ function saveStudent() {
 }
 function deleteStudent(id) {
   if (!confirm('Xóa học sinh này?')) return;
-  // FIX: Xác nhận việc có muốn giữ lại lịch sử thông tin học phí hay không
   const keepData = confirm('Bạn có muốn GIỮ LẠI lịch sử Học phí và Sổ điểm của học sinh này không?\n\n- Chọn [OK]: Giữ lại lịch sử (Khuyên dùng)\n- Chọn [Cancel]: Xóa sạch hoàn toàn');
   
   db.students = db.students.filter(s => s.id !== id);
-  delete db.attendance[id]; // Xoá điểm danh
+  delete db.attendance[id]; 
   
   if (!keepData) {
     db.phieus = (db.phieus || []).filter(p => p.studentId !== id);
     if (db.grades) delete db.grades[id];
     if (db.homework) delete db.homework[id];
     if (db.gradeTargets) delete db.gradeTargets[id];
+    if (db.journals) delete db.journals[id];
   }
   
   save(); renderStudents(); renderHome(); renderPhieuStudentSelect();
 }
 
-// ===== ĐIỂM DANH (GIỮ NGUYÊN) =====
+// ===== ĐIỂM DANH =====
 function renderAttStudents() {
   const el = document.getElementById('att-student-list');
   if (!db.students.length) { el.innerHTML = `<div class="empty-state"><p>Thêm học sinh trước</p></div>`; return; }
   el.innerHTML = db.students.map(s => `<div class="student-card ${selectedStudentId===s.id?'selected':''}" onclick="selectAttStudent('${s.id}')"><div class="student-name">👤 ${s.name}</div></div>`).join('');
-  if (selectedStudentId) renderCalendar();
+  if (selectedStudentId) {
+    renderCalendar();
+    renderJournals(); 
+  }
 }
 function selectAttStudent(id) {
   selectedStudentId = id;
   document.getElementById('att-calendar-card').style.display = 'block';
   const s = db.students.find(x => x.id === id);
   document.getElementById('att-student-name').textContent = '📅 ' + s.name;
-  renderCalendar(); renderAttStudents(); renderHomeworkStatus();
+  renderCalendar(); renderAttStudents(); renderHomeworkStatus(); renderJournals();
 }
 function changeMonth(d) {
   currentMonth += d;
   if (currentMonth>11){currentMonth=0;currentYear++;}
   if (currentMonth<0){currentMonth=11;currentYear--;}
-  renderCalendar(); renderHomeworkStatus();
+  renderCalendar(); renderHomeworkStatus(); renderJournals();
 }
 function renderCalendar() {
   if (!selectedStudentId) return;
@@ -1734,7 +1886,7 @@ function saveMultiSession() {
   save(); closeModal('modal-multi-session'); renderCalendar();
 }
 
-// ===== PHIẾU HỌC PHÍ (GIỮ NGUYÊN) =====
+// ===== PHIẾU HỌC PHÍ =====
 function handleQRUpload(event) {
   const file = event.target.files[0]; if(!file) return;
   const reader = new FileReader();
@@ -1824,7 +1976,12 @@ function generatePhieu() {
   document.getElementById('phieu-preview').scrollIntoView({behavior:'smooth'});
 }
 function buildPhieuHTML(d) {
-  return `<div class="phieu-header"><div class="lop">${d.lop}</div><div class="title">PHIẾU HỌC PHÍ</div><div class="thang">${d.monthLabel}</div></div><div class="phieu-body"><div class="phieu-row"><span class="phieu-row-label">🐻 Học sinh</span><span class="phieu-row-value">${d.studentName}</span></div><div class="phieu-row"><span class="phieu-row-label">📚 Hình thức</span><span class="phieu-row-value" style="font-size:0.8rem;">${d.typeLabel}</span></div><div class="phieu-row"><span class="phieu-row-label">📝 Số buổi học</span><span class="phieu-row-value">${d.sessions} buổi</span></div><div class="phieu-total"><div class="phieu-total-label">Tổng học phí</div><div class="phieu-total-value">${fmt(d.total)}đ</div></div>${d.dateChips.length?`<div class="phieu-dates"><div class="phieu-dates-label">Ngày đi học</div><div class="phieu-dates-wrap">${d.dateChips.map(c=>`<span class="phieu-date-chip">${c}</span>`).join('')}</div></div>`:''}${d.comment?`<div style="text-align:center;font-size:.68rem;font-weight:800;color:var(--text-light);margin:10px 0 6px;text-transform:uppercase;">— Nhận xét —</div><div class="phieu-comment">${d.comment}</div>`:''}${d.qrCode?`<div style="text-align:center;margin-top:15px;"><div style="font-size:0.65rem;font-weight:800;color:var(--text-light);text-transform:uppercase;margin-bottom:5px;">Quét để thanh toán</div><img src="${d.qrCode}" style="width:100px;height:100px;border-radius:8px;border:2px solid var(--teal-light);object-fit:cover;"></div>`:''}<div class="phieu-footer">📚 Chúc em học tập tốt!</div></div>`;
+  let isPrivateOnly = d.typeLabel && d.typeLabel.includes('Riêng') && !d.typeLabel.includes('Nhóm');
+  let tColor = isPrivateOnly ? '#f3722c' : '#3bbfad';
+  let lColor = isPrivateOnly ? '#fff0eb' : '#e0f5f3';
+  let dColor = isPrivateOnly ? '#d35400' : '#2a9d8f';
+
+  return `<div class="phieu-header" style="background:${tColor};"><div class="lop">${d.lop}</div><div class="title">PHIẾU HỌC PHÍ</div><div class="thang">${d.monthLabel}</div></div><div class="phieu-body"><div class="phieu-row"><span class="phieu-row-label">🐻 Học sinh</span><span class="phieu-row-value">${d.studentName}</span></div><div class="phieu-row"><span class="phieu-row-label">📚 Hình thức</span><span class="phieu-row-value" style="font-size:0.8rem;">${d.typeLabel}</span></div><div class="phieu-row"><span class="phieu-row-label">📝 Số buổi học</span><span class="phieu-row-value">${d.sessions} buổi</span></div><div class="phieu-total" style="background:${lColor};border-color:${tColor};"><div class="phieu-total-label" style="color:${dColor};">Tổng học phí</div><div class="phieu-total-value" style="color:${tColor};">${fmt(d.total)}đ</div></div>${d.dateChips.length?`<div class="phieu-dates"><div class="phieu-dates-label">Ngày đi học</div><div class="phieu-dates-wrap">${d.dateChips.map(c=>`<span class="phieu-date-chip" style="background:${lColor};color:${dColor};border-color:${lColor};">${c}</span>`).join('')}</div></div>`:''}${d.comment?`<div style="text-align:center;font-size:.68rem;font-weight:800;color:var(--text-light);margin:10px 0 6px;text-transform:uppercase;">— Nhận xét —</div><div class="phieu-comment">${d.comment}</div>`:''}${d.qrCode?`<div style="text-align:center;margin-top:15px;"><div style="font-size:0.65rem;font-weight:800;color:var(--text-light);text-transform:uppercase;margin-bottom:5px;">Quét để thanh toán</div><img src="${d.qrCode}" style="width:100px;height:100px;border-radius:8px;border:2px solid ${lColor};object-fit:cover;"></div>`:''}<div class="phieu-footer" style="color:${tColor};">📚 Chúc em học tập tốt!</div></div>`;
 }
 function printPhieuFromModal() { printDoc(document.getElementById('modal-view-phieu-content').innerHTML); }
 function printPhieu() { printDoc(document.getElementById('phieu-display').innerHTML); }
@@ -1880,7 +2037,7 @@ function viewPhieu(id) {
 }
 function deletePhieu(id) { db.phieus=db.phieus.filter(p=>p.id!==id); save(); renderPhieuHistory(); }
 
-// ===== THỐNG KÊ (GIỮ NGUYÊN) =====
+// ===== THỐNG KÊ =====
 function renderStats() {
   const mode=document.getElementById('stats-mode').value;
   if(mode==='year'){document.getElementById('stats-view-year').style.display='block';document.getElementById('stats-view-month').style.display='none';renderStatsYearly();}
@@ -1933,7 +2090,7 @@ function renderStatsMonthly() {
     </div>`).join(''):`<div class="empty-state"><p>Chưa có phiếu thu nào trong ${formatMonth(filterMonth)}</p></div>`;
 }
 
-// ===== UTILS (GIỮ NGUYÊN) =====
+// ===== UTILS =====
 function fmt(n) { return Number(n).toLocaleString('vi-VN'); }
 function formatMonth(m) { return m ? `Tháng ${parseInt(m.split('-')[1])}/${m.split('-')[0]}` : ''; }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
@@ -1957,249 +2114,6 @@ function importData(e) {
     } catch { alert('❌ File không hợp lệ!'); }
   };
   r.readAsText(f);
-}
-
-// =============================================================
-// ===== [MỚI] TÍNH NĂNG 1: LỊCH DẠY HÔM NAY =================
-// =============================================================
-function renderTodaySchedule() {
-  const banner = document.getElementById('today-schedule-banner');
-  const sessionsList = document.getElementById('tsb-sessions-list');
-  const dateLabel = document.getElementById('tsb-date-label');
-
-  const today = new Date();
-  const todayDay = today.getDate();
-  const todayMonth = today.getMonth();
-  const todayYear = today.getFullYear();
-  const monthKey = `${todayYear}-${String(todayMonth + 1).padStart(2, '0')}`;
-
-  // Ngày hiển thị
-  const days = ['Chủ nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
-  const months = ['1','2','3','4','5','6','7','8','9','10','11','12'];
-  dateLabel.textContent = `${days[today.getDay()]}, ngày ${todayDay}/${months[todayMonth]}/${todayYear}`;
-
-  // Tìm học sinh có buổi học hôm nay
-  const todaySessions = [];
-  db.students.forEach(s => {
-    const attObj = db.attendance[s.id]?.[monthKey];
-    if (!attObj) return;
-    const val = attObj[todayDay];
-    if (!val) return;
-    let p = 0, g = 0;
-    if (val === 'private') p = 1;
-    else if (val === 'group') g = 1;
-    else if (typeof val === 'string' && val.startsWith('p:')) {
-      const parts = val.split(',');
-      p = parseInt(parts[0].split(':')[1]) || 0;
-      g = parseInt(parts[1].split(':')[1]) || 0;
-    }
-    if (p > 0 || g > 0) {
-      todaySessions.push({ name: s.name, grade: s.grade || '', subject: s.subject || '', p, g });
-    }
-  });
-
-  if (todaySessions.length === 0) {
-    banner.style.display = 'block';
-    sessionsList.innerHTML = `<div class="tsb-empty">Chưa có buổi dạy nào được ghi nhận hôm nay</div>`;
-    return;
-  }
-
-  banner.style.display = 'block';
-  sessionsList.innerHTML = todaySessions.map(s => {
-    const typeIcon = s.p > 0 && s.g > 0 ? '🔀' : s.p > 0 ? '👤' : '👥';
-    const typeText = s.p > 0 && s.g > 0 ? `${s.p} riêng + ${s.g} nhóm` : s.p > 0 ? 'Học riêng' : 'Học nhóm';
-    const sub = s.subject ? ` · ${s.subject}` : '';
-    const grade = s.grade ? ` ${s.grade}` : '';
-    return `<div class="tsb-chip">${typeIcon} <b>${s.name}</b><span style="opacity:0.75;font-size:0.75rem;">${grade}${sub} — ${typeText}</span></div>`;
-  }).join('');
-}
-
-// =============================================================
-// ===== [MỚI] TÍNH NĂNG 2: VÙNG ĐỎ CẢNH BÁO ================
-// =============================================================
-function renderRedZoneAlerts() {
-  const section = document.getElementById('redzone-section');
-  const list = document.getElementById('redzone-list');
-  if (!section || !list) return;
-
-  const selectedMonth = document.getElementById('home-month').value;
-  const [selYear, selMonthNum] = selectedMonth.split('-').map(Number);
-
-  const alerts = [];
-
-  db.students.forEach(s => {
-    const reasons = [];
-    const tags = [];
-
-    // ---- Kiểm tra điểm giảm 2 bài liên tiếp ----
-    const grades = (db.grades?.[s.id] || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-    if (grades.length >= 3) {
-      // Lấy 3 bài gần nhất
-      const last3 = grades.slice(-3);
-      const [g1, g2, g3] = last3;
-      if (g2.score < g1.score && g3.score < g2.score) {
-        reasons.push('Điểm giảm 2 bài liên tiếp');
-        tags.push(`<span class="redzone-tag redzone-tag-score">📉 ${g1.score} → ${g2.score} → ${g3.score}</span>`);
-      }
-    }
-
-    // ---- Kiểm tra nợ bài BTVN ≥ 3 tháng liên tiếp ----
-    let debtCount = 0;
-    // Kiểm tra 6 tháng gần nhất
-    for (let i = 0; i < 6; i++) {
-      let checkMonth = selMonthNum - i;
-      let checkYear = selYear;
-      while (checkMonth <= 0) { checkMonth += 12; checkYear--; }
-      const mKey = `${checkYear}-${String(checkMonth).padStart(2, '0')}`;
-      const hwStatus = db.homework?.[s.id]?.[mKey];
-      if (hwStatus === 'missing' || hwStatus === 'none') {
-        debtCount++;
-      } else {
-        break; // dừng chuỗi
-      }
-    }
-    if (debtCount >= 3) {
-      reasons.push(`Nợ bài ${debtCount} tháng liên tiếp`);
-      tags.push(`<span class="redzone-tag redzone-tag-hw">📚 Nợ ${debtCount} tháng</span>`);
-    }
-
-    if (reasons.length > 0) {
-      alerts.push({ student: s, reasons, tags });
-    }
-  });
-
-  if (alerts.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
-
-  section.style.display = 'block';
-  list.innerHTML = alerts.map(a => `
-    <div class="redzone-item">
-      <div>
-        <div class="redzone-item-name">👤 ${a.student.name}${a.student.grade ? ` <span style="font-size:0.75rem;color:var(--text-light);font-weight:600;">${a.student.grade}</span>` : ''}</div>
-        <div class="redzone-item-reason">${a.reasons.join(' · ')}</div>
-      </div>
-      <div class="redzone-tags">${a.tags.join('')}</div>
-    </div>`).join('');
-}
-
-// =============================================================
-// ===== [MỚI] TÍNH NĂNG 3: KHO TÀI LIỆU ====================
-// =============================================================
-let currentDocFilter = 'all';
-let editingDocId = null;
-
-const DOC_TYPE_LABELS = {
-  lesson: { label: '📖 Bài học', cls: 'doc-type-lesson', icon: '📖' },
-  exercise: { label: '✏️ Bài tập', cls: 'doc-type-exercise', icon: '✏️' },
-  exam: { label: '📝 Đề thi', cls: 'doc-type-exam', icon: '📝' },
-  reference: { label: '🔖 Tham khảo', cls: 'doc-type-reference', icon: '🔖' },
-};
-
-function setDocFilter(f) {
-  currentDocFilter = f;
-  document.querySelectorAll('.doc-filter-tab').forEach((btn, i) => {
-    const filters = ['all','lesson','exercise','exam','reference'];
-    btn.classList.toggle('active', filters[i] === f);
-  });
-  renderDocs();
-}
-
-function renderDocs() {
-  db.docs = db.docs || [];
-  const q = (document.getElementById('doc-search')?.value || '').toLowerCase();
-  let docs = db.docs;
-  if (currentDocFilter !== 'all') docs = docs.filter(d => d.type === currentDocFilter);
-  if (q) docs = docs.filter(d => d.title.toLowerCase().includes(q) || (d.subject||'').toLowerCase().includes(q) || (d.desc||'').toLowerCase().includes(q));
-
-  const el = document.getElementById('doc-list');
-  if (!docs.length) {
-    el.innerHTML = `<div class="empty-state">${db.docs.length === 0 ? 'Chưa có tài liệu nào. Nhấn "+ Thêm tài liệu" để bắt đầu!' : 'Không tìm thấy tài liệu phù hợp.'}</div>`;
-    return;
-  }
-
-  el.innerHTML = docs.map(d => {
-    const typeInfo = DOC_TYPE_LABELS[d.type] || DOC_TYPE_LABELS.reference;
-    const shortUrl = d.url ? (d.url.length > 40 ? d.url.substring(0,37)+'...' : d.url) : '';
-    return `
-      <div class="doc-card">
-        <div class="doc-card-actions">
-          <button class="btn btn-outline btn-sm" style="padding:4px 8px;" onclick="editDoc('${d.id}')" title="Sửa">✏️</button>
-          <button class="btn btn-danger btn-sm" style="padding:4px 8px;" onclick="deleteDoc('${d.id}')" title="Xóa">🗑️</button>
-        </div>
-        <span class="doc-type-badge ${typeInfo.cls}">${typeInfo.label}</span>
-        <div class="doc-card-title">${d.title}</div>
-        ${d.subject ? `<div class="doc-card-subject">📚 ${d.subject}</div>` : ''}
-        ${d.desc ? `<div class="doc-card-desc">${d.desc}</div>` : ''}
-        ${d.url ? `
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;">
-            <a href="${d.url}" target="_blank" class="doc-card-link">🔗 ${shortUrl}</a>
-            <button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:0.75rem;" onclick="copyDocLink('${d.id}')">📋 Copy</button>
-          </div>` : '<div style="margin-top:8px;font-size:0.75rem;color:var(--text-light);">Chưa có link</div>'}
-      </div>`;
-  }).join('');
-}
-
-function openAddDoc() {
-  editingDocId = null;
-  document.getElementById('modal-doc-title').textContent = '📁 Thêm tài liệu';
-  ['doc-title-input','doc-subject-input','doc-url-input','doc-desc-input'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('doc-type-input').value = 'lesson';
-  openModal('modal-doc');
-}
-
-function editDoc(id) {
-  const d = (db.docs||[]).find(x => x.id === id); if(!d) return;
-  editingDocId = id;
-  document.getElementById('modal-doc-title').textContent = '✏️ Sửa tài liệu';
-  document.getElementById('doc-title-input').value = d.title || '';
-  document.getElementById('doc-subject-input').value = d.subject || '';
-  document.getElementById('doc-type-input').value = d.type || 'lesson';
-  document.getElementById('doc-url-input').value = d.url || '';
-  document.getElementById('doc-desc-input').value = d.desc || '';
-  openModal('modal-doc');
-}
-
-function saveDoc() {
-  const title = document.getElementById('doc-title-input').value.trim();
-  if (!title) return alert('Vui lòng nhập tiêu đề tài liệu!');
-  const data = {
-    title,
-    subject: document.getElementById('doc-subject-input').value.trim(),
-    type: document.getElementById('doc-type-input').value,
-    url: document.getElementById('doc-url-input').value.trim(),
-    desc: document.getElementById('doc-desc-input').value.trim(),
-  };
-  db.docs = db.docs || [];
-  if (editingDocId) {
-    const idx = db.docs.findIndex(d => d.id === editingDocId);
-    if (idx >= 0) db.docs[idx] = { ...db.docs[idx], ...data };
-  } else {
-    db.docs.unshift({ id: Date.now().toString(), ...data, createdAt: new Date().toISOString() });
-  }
-  save();
-  closeModal('modal-doc');
-  renderDocs();
-}
-
-function deleteDoc(id) {
-  if (!confirm('Xóa tài liệu này?')) return;
-  db.docs = (db.docs||[]).filter(d => d.id !== id);
-  save(); renderDocs();
-}
-
-function copyDocLink(id) {
-  const d = (db.docs||[]).find(x => x.id === id); if(!d||!d.url) return;
-  const toast = document.getElementById('doc-copy-confirm');
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(d.url).then(() => { toast.style.display='block'; setTimeout(()=>toast.style.display='none',2500); });
-  } else {
-    const el = document.createElement('input'); el.value = d.url;
-    document.body.appendChild(el); el.select(); document.execCommand('copy');
-    document.body.removeChild(el);
-    toast.style.display='block'; setTimeout(()=>toast.style.display='none',2500);
-  }
 }
 </script>
 </body>
