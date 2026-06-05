@@ -11,6 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -707,7 +708,6 @@ body.dark .sticky-note {
               Đánh giá tình trạng bài tập về nhà của tháng đang xem
             </div>
           </div>
-          <!-- NHẬT KÝ BÀI GIẢNG -->
           <div class="hw-tracker-section" id="journal-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <div class="hw-tracker-title" style="margin-bottom:0;">📖 Nhật ký bài giảng</div>
@@ -830,6 +830,7 @@ body.dark .sticky-note {
       <div class="card-header">
         <div class="card-title">✅ Phiếu học phí</div>
         <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="copyPhieuImage('phieu-display')" id="btn-copy-phieu">📸 Copy ảnh</button>
           <button class="btn btn-outline btn-sm" onclick="printPhieu()">🖨️ In phiếu</button>
           <button class="btn btn-primary btn-sm" onclick="savePhieu()">💾 Lưu lịch sử</button>
         </div>
@@ -985,6 +986,7 @@ body.dark .sticky-note {
     <div class="modal-header">
       <div class="modal-title">🧾 Phiếu học phí</div>
       <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-outline btn-sm" onclick="copyPhieuImage('modal-view-phieu-content')" id="btn-copy-modal">📸 Copy ảnh</button>
         <button class="btn btn-outline btn-sm" onclick="printPhieuFromModal()">🖨️ In phiếu</button>
         <button class="modal-close" onclick="closeModal('modal-view-phieu')">✕</button>
       </div>
@@ -1078,7 +1080,6 @@ body.dark .sticky-note {
   </div>
 </div>
 
-<!-- NHẬT KÝ BÀI GIẢNG MODAL -->
 <div class="modal-overlay" id="modal-journal">
   <div class="modal">
     <div class="modal-header">
@@ -2160,6 +2161,46 @@ function renderStatsMonthly() {
       <span style="display:inline-block;margin-top:4px;font-size:0.65rem;font-weight:800;padding:2px 6px;border-radius:10px;background:${p.paid?'#f0fff4':'#fff5f5'};color:${p.paid?'#2f855a':'#c53030'};border:1px solid ${p.paid?'#c6f6d5':'#fed7d7'};">${p.paid?'Đã Thanh Toán':'Chưa Thanh Toán'}</span>
       </div>
     </div>`).join(''):`<div class="empty-state"><p>Chưa có phiếu thu nào trong ${formatMonth(filterMonth)}</p></div>`;
+}
+
+// ===== THÊM CHỨC NĂNG COPY ẢNH =====
+async function copyPhieuImage(elementId) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+  
+  // Đổi text nút thành Đang xử lý...
+  const btnId = elementId === 'phieu-display' ? 'btn-copy-phieu' : 'btn-copy-modal';
+  const btn = document.getElementById(btnId);
+  const oldText = btn.innerHTML;
+  btn.innerHTML = '⏳ Đang copy...';
+  btn.disabled = true;
+
+  try {
+    const canvas = await html2canvas(element, {
+      scale: 3, // Scale 3 để ảnh cực kỳ sắc nét khi zoom
+      useCORS: true,
+      backgroundColor: '#ffffff' // Giữ nền trắng chuẩn
+    });
+    
+    canvas.toBlob(async (blob) => {
+      try {
+        const item = new ClipboardItem({ "image/png": blob });
+        await navigator.clipboard.write([item]);
+        alert('✅ Đã copy ảnh phiếu sắc nét! Bạn có thể dán (Ctrl+V) thẳng vào Zalo/Messenger để gửi phụ huynh.');
+      } catch (err) {
+        console.error('Lỗi clipboard:', err);
+        alert('❌ Trình duyệt chặn quyền copy ảnh. Vui lòng dùng tính năng "In phiếu" hoặc kiểm tra lại quyền của trình duyệt!');
+      } finally {
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+      }
+    }, 'image/png');
+  } catch (err) {
+    console.error('Lỗi tạo ảnh:', err);
+    alert('❌ Có lỗi xảy ra khi tạo ảnh.');
+    btn.innerHTML = oldText;
+    btn.disabled = false;
+  }
 }
 
 // ===== UTILS =====
