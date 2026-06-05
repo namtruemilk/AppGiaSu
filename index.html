@@ -828,7 +828,7 @@ body.dark .sticky-note {
     </div>
     <div id="phieu-preview" style="display:none;" class="card">
       <div class="card-header">
-        <div class="card-title">✅ Phiếu học phí</div>
+        <div class="card-title" style="font-size: 0.95rem; white-space: nowrap;">✅ Phiếu học phí</div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-outline btn-sm" onclick="copyPhieuImage('phieu-display')" id="btn-copy-phieu">📸 Copy ảnh</button>
           <button class="btn btn-outline btn-sm" onclick="printPhieu()">🖨️ In phiếu</button>
@@ -1208,7 +1208,7 @@ function startRealtimeSync() {
       if (doc.exists) {
         let fsDb = doc.data();
         // Cập nhật nếu mây có dữ liệu MỚI HƠN local
-        if (!db.lastUpdated || (fsDb.lastUpdated && fsDb.lastUpdated > db.lastUpdated)) {
+        if (!db.lastUpdated || (fsDb.lastUpdated && fsDb.lastUpdated !== db.lastUpdated)) {
           db = fsDb;
           db.students = db.students || [];
           db.attendance = db.attendance || {};
