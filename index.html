@@ -1207,8 +1207,9 @@ function startRealtimeSync() {
     .onSnapshot((doc) => {
       if (doc.exists) {
         let fsDb = doc.data();
-        // Cập nhật nếu mây có dữ liệu MỚI HƠN local
-        if (!db.lastUpdated || (fsDb.lastUpdated && fsDb.lastUpdated !== db.lastUpdated)) {
+        // Chỉ cập nhật nếu mây mới hơn, HOẶC khác biệt nhưng đã qua 3 giây kể từ lần lưu cuối (chống dội ngược)
+let timeSinceLastSave = Date.now() - (window.lastLocalSaveTime || 0);
+if (!db.lastUpdated || fsDb.lastUpdated > db.lastUpdated || (fsDb.lastUpdated !== db.lastUpdated && timeSinceLastSave > 3000)) {
           db = fsDb;
           db.students = db.students || [];
           db.attendance = db.attendance || {};
@@ -1233,9 +1234,8 @@ function startRealtimeSync() {
 function save() {
   if (!currentUser) return;
   db.lastUpdated = Date.now();
+  window.lastLocalSaveTime = Date.now(); // Thêm chốt chặn thời gian lưu
   localStorage.setItem('giasu_db_' + currentUser.uid, JSON.stringify(db));
-  
-  // Đẩy thẳng lên Firebase không cần setTimeout để đồng bộ Realtime tức thì
   firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error);
 }
 
@@ -2038,7 +2038,7 @@ function savePhieu() {
   if (p > 0 && g === 0) isPriv = true;
   if (g > 0 && p === 0) isPriv = false;
 
-  db.phieus=db.phieus||[];
+  db.phieus = Array.isArray(db.phieus) ? db.phieus : Object.values(db.phieus || {});
   db.phieus.unshift({
     id:Date.now().toString(),
     studentId,
