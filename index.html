@@ -1207,27 +1207,31 @@ function startRealtimeSync() {
     .onSnapshot((doc) => {
       if (doc.exists) {
         let fsDb = doc.data();
-        // Chỉ cập nhật nếu mây mới hơn, HOẶC khác biệt nhưng đã qua 3 giây kể từ lần lưu cuối (chống dội ngược)
-let timeSinceLastSave = Date.now() - (window.lastLocalSaveTime || 0);
-if (!db.lastUpdated || fsDb.lastUpdated > db.lastUpdated || (fsDb.lastUpdated !== db.lastUpdated && timeSinceLastSave > 3000)) {
+        
+        // [ĐÃ FIX 100%] Thuật toán đồng bộ 2 chiều chính xác
+        if (!db.lastUpdated || fsDb.lastUpdated > db.lastUpdated) {
+          // Dữ liệu trên Firebase MỚI HƠN -> Cập nhật xuống máy hiện tại (ví dụ: mở điện thoại sẽ lấy từ PC về)
           db = fsDb;
           db.students = db.students || [];
           db.attendance = db.attendance || {};
           db.phieus = db.phieus || [];
           db.grades = db.grades || {};
           db.docs = db.docs || [];
-          db.journals = db.journals || {}; // Thêm phần cho Nhật ký
+          db.journals = db.journals || {};
           localStorage.setItem('giasu_db_' + currentUser.uid, JSON.stringify(db));
           
           // Re-render màn hình đang mở
           const activePage = document.querySelector('.page.active');
           if (activePage) showPage(activePage.id);
+        } else if (db.lastUpdated > fsDb.lastUpdated) {
+          // Local có dữ liệu MỚI HƠN (do vừa nhập xong nhưng mây chưa kịp cập nhật) -> Bắn ngược lên mây
+          firestore.collection('users').doc(currentUser.uid).set(db).catch(console.error);
         }
       }
       showApp();
     }, (error) => {
       console.error("Lỗi đồng bộ Realtime:", error);
-      showApp(); // Lỗi mạng vẫn cho mở web dùng offline
+      showApp(); 
     });
 }
 
@@ -1787,23 +1791,19 @@ function saveStudent() {
   save(); closeModal('modal-student'); renderStudents(); renderPhieuStudentSelect();
 }
 function deleteStudent(id) {
-  if (!confirm('Xóa học sinh này?')) return;
-  const keepData = confirm('Bạn có muốn GIỮ LẠI lịch sử Học phí và Sổ điểm của học sinh này không?\n\n- Chọn [OK]: Giữ lại lịch sử (Khuyên dùng)\n- Chọn [Cancel]: Xóa sạch hoàn toàn');
-  
-  db.students = db.students.filter(s => s.id !== id);
-  delete db.attendance[id]; 
-  
-  if (!keepData) {
-    db.phieus = (db.phieus || []).filter(p => p.studentId !== id);
-    if (db.grades) delete db.grades[id];
-    if (db.homework) delete db.homework[id];
-    if (db.gradeTargets) delete db.gradeTargets[id];
-    if (db.journals) delete db.journals[id];
-  }
-  
-  save(); renderStudents(); renderHome(); renderPhieuStudentSelect();
-}
+  if (!confirm('Xóa học sinh này khỏi danh sách?\n(Lịch sử Học phí và Thống kê doanh thu cũ vẫn sẽ được giữ lại nguyên vẹn để không làm sai lệch sổ sách)')) return;
 
+  db.students = db.students.filter(s => s.id !== id);
+  delete db.attendance[id];
+  
+  // Đã xóa phần lệnh rườm rà dễ gây lỗi. 
+  // Hệ thống giờ đây cố tình KHÔNG xóa db.phieus và db.grades để bảo toàn lịch sử thu tiền.
+  
+  save(); 
+  renderStudents(); 
+  renderHome(); 
+  renderPhieuStudentSelect();
+}
 // ===== ĐIỂM DANH =====
 function renderAttStudents() {
   const el = document.getElementById('att-student-list');
